@@ -29,29 +29,29 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 							array($item));
 					}
 					break;
-			
-			
+
+
 				case 'automation_devices.php':
 					foreach ($selected_items as $item) {
 						$result = db_fetch_assoc_prepared('SELECT id, network_id,hostname,ip,sysName,syslocation,snmp,up
 							FROM automation_devices
 							WHERE id IN (?)',
 							array($item));
-				
+
 						foreach ($result as &$row) {
 							$row['snmp'] = ($row['snmp'] == 1) ? 'UP' : 'Down';
 							$row['up'] = ($row['up'] == 1) ? 'Yes' : 'No';
 						}
-				
+
 						$objects[] = $result;
 					}
 					break;
-				
+
 
 			case 'graph_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
-						FROM graph_template
+						FROM graph_templates
 						WHERE id IN (?)',
 						array($item));
 				}
@@ -59,7 +59,7 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 
 			case 'thold.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source 
+					$objects[] = db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source
 						FROM thold_data
 						WHERE id IN (?)',
 						array($item));
@@ -72,7 +72,7 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 						array($item));
 				}
 				break;
-				
+
 			case 'data_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
@@ -81,7 +81,7 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 						array($item));
 				}
 				break;
-			
+
 			case 'aggregate_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
@@ -129,7 +129,7 @@ function audit_config_insert() {
 	if (audit_log_valid_event()) {
 		/* prepare post */
 		$post = $_REQUEST;
-		
+
 
 		/* remove unsafe variables */
 		unset($post['__csrf_magic']);
@@ -149,7 +149,7 @@ function audit_config_insert() {
 		}
 
 
-		
+
 		/* sanitize and serialize selected items */
 		if (isset($post['selected_items'])) {
 			$selected_items = sanitize_unserialize_selected_items($post['selected_items']);
@@ -214,7 +214,7 @@ function audit_config_insert() {
 			if (!file_exists(read_config_option('audit_log_external_path'))) {
 				cacti_log('ERROR: Audit Log file does not exist ', false, 'AUDIT');
 			}
-		
+
 			if (read_config_option('audit_log_external') == 'on' && read_config_option('audit_log_external_path') != '' && file_exists(read_config_option('audit_log_external_path')))  {
 				$audit_log_external_path = read_config_option('audit_log_external_path');
 				$log_data = array(

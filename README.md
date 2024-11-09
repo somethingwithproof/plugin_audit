@@ -34,5 +34,5 @@ If you figure out this problem, see the Cacti forums!
 
 Got any ideas or complaints, please log an issue on GitHub.
 
-
+-----------------------------------------------
 Copyright (c) 2004-2024 - The Cacti Group, Inc.

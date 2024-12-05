@@ -161,7 +161,7 @@ function audit_config_insert() {
 		$event_time  = date('Y-m-d H:i:s');
 
 		/* Retrieve IP address */
-		$ip_address  = get_cleint_addr();
+		$ip_address  = get_client_addr();
 
 		/* Get the User Agent */
 		$user_agent  = $_SERVER['HTTP_USER_AGENT'];

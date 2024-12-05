@@ -3,6 +3,7 @@
 --- develop ---
 
 * issue#38: Graph Template table does not exist
+* issue: If the audit log does not exist or is not set, set it and create it
 
 --- 1.2 ---
 

@@ -124,12 +124,11 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 
 
 function audit_config_insert() {
-	global $action;
+	global $action, $config;
 
 	if (audit_log_valid_event()) {
 		/* prepare post */
 		$post = $_REQUEST;
-
 
 		/* remove unsafe variables */
 		unset($post['__csrf_magic']);
@@ -140,15 +139,12 @@ function audit_config_insert() {
 			}
 		}
 
-
-		// Check if drp_action is present and update action accordingly
+		/* check if drp_action is present and update action accordingly */
 		if (isset($post['drp_action']) && $post['drp_action'] == 1) {
 			$action = 'delete';
 		} else if (isset($post['drp_action']) && $post['drp_action'] == 4) {
 			$action = 'disable';
 		}
-
-
 
 		/* sanitize and serialize selected items */
 		if (isset($post['selected_items'])) {
@@ -164,17 +160,10 @@ function audit_config_insert() {
 		$user_id     = (isset($_SESSION['sess_user_id']) ? $_SESSION['sess_user_id'] : 0);
 		$event_time  = date('Y-m-d H:i:s');
 
-		// Retrieve IP address
-		if (isset($_SERVER['X-Forwarded-For'])) {
-			$ip_address = $_SERVER['X-Forwarded-For'];
-		} elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-			$ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
-		} elseif (isset($_SERVER['REMOTE_ADDR'])) {
-			$ip_address = $_SERVER['REMOTE_ADDR'];
-		} else {
-			$ip_address = '';
-		}
+		/* Retrieve IP address */
+		$ip_address  = get_cleint_addr();
 
+		/* Get the User Agent */
 		$user_agent  = $_SERVER['HTTP_USER_AGENT'];
 
 		if (empty($action) && isset_request_var('action')) {
@@ -184,6 +173,7 @@ function audit_config_insert() {
 		}
 
 		$object_data = audit_process_page_data($page, $drop_action, $selected_items);
+
 		switch ($page) {
 			case 'automation_devices.php':
 				switch ($drop_action) {
@@ -194,6 +184,7 @@ function audit_config_insert() {
 						$action = 'Create Device';
 						break;
 				}
+
 				break;
 			case 'host.php':
 				switch ($drop_action) {
@@ -204,39 +195,56 @@ function audit_config_insert() {
 						$action = 'Host Disabled';
 						break;
 				}
+
 				break;
+		}
+
+		$audit_log = read_config_option('audit_log_external_path');
+
+		if (!defined('CACTI_PATH_BASE')) {
+			$base = $config['base_path'];
+		} else {
+			$base = CACTI_PATH_BASE;
 		}
 
 		db_execute_prepared('INSERT INTO audit_log (page, user_id, action, ip_address, user_agent, event_time, post, object_data)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
 			array($page, $user_id, $action, $ip_address, $user_agent, $event_time, $post, $object_data));
 
-			if (!file_exists(read_config_option('audit_log_external_path'))) {
-				cacti_log('ERROR: Audit Log file does not exist ', false, 'AUDIT');
+		if ($audit_log == '') {
+			set_config_option('audit_log_external_path', $base . '/log/audit.log');
+			$audit_log = $base . '/log/audit.log';
+		}
+
+		if ($audit_log != '' && !file_exists($audit_log)) {
+			if (is_writable($audit_log)) {
+				cacti_log('WARNING: Audit Log file does not exist.  Creating it.', false, 'AUDIT');
+				touch($audit_log);
+			} else {
+				cacti_log('ERROR: Audit Log file does not exist and the path is not writeable.', false, 'AUDIT');
 			}
+		}
 
-			if (read_config_option('audit_log_external') == 'on' && read_config_option('audit_log_external_path') != '' && file_exists(read_config_option('audit_log_external_path')))  {
-				$audit_log_external_path = read_config_option('audit_log_external_path');
-				$log_data = array(
-					'page' => $page,
-					'user_id' => $user_id,
-					'action' => $action,
-					'ip_address' => $ip_address,
-					'user_agent' => $user_agent,
-					'event_time' => $event_time,
-					'post' => $post,
-					'object_data' => $object_data
-				);
+		if (read_config_option('audit_log_external') == 'on' && $audit_log != '' && file_exists($audit_log))  {
+			$log_data = array(
+				'page'        => $page,
+				'user_id'     => $user_id,
+				'action'      => $action,
+				'ip_address'  => $ip_address,
+				'user_agent'  => $user_agent,
+				'event_time'  => $event_time,
+				'post'        => $post,
+				'object_data' => $object_data
+			);
 
-				$log_msg = json_encode($log_data) . "\n";
-				$file = fopen($audit_log_external_path, 'a');
-				if ($file) {
-					fwrite($file, $log_msg);
-					fclose($file);
-				}
+			$log_msg = json_encode($log_data) . "\n";
+			$file    = fopen($audit_log, 'a');
+
+			if ($file) {
+				fwrite($file, $log_msg);
+				fclose($file);
 			}
-
-
+		}
 	} elseif (isset($_SERVER['argv'])) {
 		$page       = basename($_SERVER['argv'][0]);
 		$user_id    = 0;
@@ -252,9 +260,11 @@ function audit_config_insert() {
 			strpos($_SERVER['argv'][0], '/scripts/') === false &&
 			strpos($_SERVER['argv'][0], 'script_server.php') === false &&
 			strpos($_SERVER['argv'][0], '_process.php') === false) {
+
 			db_execute_prepared('INSERT INTO audit_log (page, user_id, action, ip_address, user_agent, event_time, post)
 				VALUES (?, ?, ?, ?, ?, ?, ?)',
 				array($page, $user_id, $action, $ip_address, $user_agent, $event_time, $post));
 		}
 	}
 }
+

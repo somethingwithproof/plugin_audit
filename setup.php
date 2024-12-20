@@ -31,6 +31,7 @@ function plugin_audit_install() {
 	api_plugin_register_hook('audit', 'poller_bottom',        'audit_poller_bottom',        'setup.php');
 	api_plugin_register_hook('audit', 'draw_navigation_text', 'audit_draw_navigation_text', 'setup.php');
 	api_plugin_register_hook('audit', 'utilities_array',      'audit_utilities_array',      'setup.php');
+	api_plugin_register_hook('audit', 'is_console_page',      'audit_is_console_page',      'setup.php');
 
 	/* hook for table replication */
 	api_plugin_register_hook('audit', 'replicate_out',        'audit_replicate_out',        'setup.php');
@@ -43,6 +44,14 @@ function plugin_audit_install() {
 function plugin_audit_uninstall() {
 	db_execute('DROP TABLE IF EXISTS audit_log');
 	return true;
+}
+
+function audit_is_console_page($url) {
+	if (strpos($url, 'audit.php') !== false) {
+		return true;
+	}
+
+	return false;
 }
 
 function plugin_audit_check_config() {
@@ -87,6 +96,7 @@ function audit_check_upgrade() {
 
 		/* hook for table replication */
 		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', '1');
+		api_plugin_register_hook('audit', 'is_console_page', 'audit_is_console_page', 'setup.php', 1);
 	}
 }
 
@@ -179,7 +189,7 @@ function audit_setup_table() {
 	return true;
 }
 
-function plugin_audit_version () {
+function plugin_audit_version() {
 	global $config;
 	$info = parse_ini_file($config['base_path'] . '/plugins/audit/INFO', true);
 	return $info['info'];
@@ -218,22 +228,21 @@ function audit_log_valid_event() {
 	return $valid;
 }
 
-
-
 function audit_utilities_array() {
 	global $utilities;
 
-	/* append technical support page */
-	if (api_plugin_user_realm_auth('audit.php')) {
-		$utilities[__('Technical Support', 'audit')] = array_merge(
-			$utilities[__('Technical Support', 'audit')],
-			array(
-				__('View Audit Log', 'audit') => array(
-					'link'  => 'plugins/audit/audit.php',
-					'description' => __('Allows Administrators to view change activity on the Cacti server.  Administrators can also export the audit log for analysis purposes.', 'audit')
+	if (cacti_version_compare(CACTI_VERSION, '1.3.0', '<')) {
+		if (api_plugin_user_realm_auth('audit.php')) {
+			$utilities[__('Technical Support', 'audit')] = array_merge(
+				$utilities[__('Technical Support', 'audit')],
+				array(
+					__('View Audit Log', 'audit') => array(
+						'link'  => 'plugins/audit/audit.php',
+						'description' => __('Allows Administrators to view change activity on the Cacti server.  Administrators can also export the audit log for analysis purposes.', 'audit')
+					)
 				)
-			)
-		);
+			);
+		}
 	}
 }
 
@@ -257,6 +266,8 @@ function audit_config_arrays() {
 		1095 => __('%d Years',  3, 'audit')
 	);
 
+	$menu[__('Utilities')]['plugins/audit/audit.php'] = __('Audit Log', 'audit');
+
 	if (function_exists('auth_augment_roles')) {
 		auth_augment_roles(__('System Administration'), array('audit.php'));
 	}
@@ -264,7 +275,7 @@ function audit_config_arrays() {
 	audit_check_upgrade();
 }
 
-function audit_config_settings () {
+function audit_config_settings() {
 	global $tabs, $settings, $item_rows, $audit_retentions;
 
 	$temp = array(

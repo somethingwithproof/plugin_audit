@@ -231,7 +231,7 @@ function audit_log_valid_event() {
 function audit_utilities_array() {
 	global $utilities;
 
-	if (cacti_version_compare(CACTI_VERSION, '1.3.0', '<')) {
+	if (version_compare(CACTI_VERSION, '1.3.0', '<')) {
 		if (api_plugin_user_realm_auth('audit.php')) {
 			$utilities[__('Technical Support', 'audit')] = array_merge(
 				$utilities[__('Technical Support', 'audit')],

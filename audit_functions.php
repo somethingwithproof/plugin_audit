@@ -148,7 +148,7 @@ function audit_config_insert() {
 
 		/* sanitize and serialize selected items */
 		if (isset($post['selected_items'])) {
-			$selected_items = sanitize_unserialize_selected_items($post['selected_items']);
+			$selected_items = unserialize(stripslashes($post['selected_items']), array('allowed_classes' => false));
 			$drop_action    = $post['drp_action'];
 		} else {
 			$selected_items = array();

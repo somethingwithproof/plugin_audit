@@ -4,7 +4,7 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr "Project-Id-Version: \nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-03-14 13:08+0000\nLast-Translator: Daniel Nylander <weblate@danielnylander.se>\nLanguage-Team: Swedish <http://translate.cacti.net/projects/cacti/audit/sv/>\nLanguage: sv-SE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 4.8.1\n"
+msgstr "Project-Id-Version: \nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-03-18 08:39+0000\nLast-Translator: Daniel Nylander <weblate@danielnylander.se>\nLanguage-Team: Swedish <http://translate.cacti.net/projects/cacti/audit/sv/>\nLanguage: sv-SE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 4.8.1\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
@@ -74,7 +74,7 @@ msgstr "Användare"
 
 #: audit.php:302
 msgid "cli"
-msgstr "CLI"
+msgstr "cli"
 
 #: audit.php:314
 msgid "Events"
@@ -154,7 +154,7 @@ msgstr "Webbläsarens typ av sökande."
 
 #: audit.php:466
 msgid "IP Address"
-msgstr "IP adress"
+msgstr "IP-adress"
 
 #: audit.php:469
 msgid "The IP Address of the requester."
@@ -203,27 +203,27 @@ msgstr "Ingen gräns"
 #: setup.php:249
 #, php-format
 msgid "%d Weeks"
-msgstr "%d Veckor"
+msgstr "%d veckor"
 
 #: setup.php:250
 #, php-format
 msgid "%d Month"
-msgstr "%d Månad"
+msgstr "%d månad"
 
 #: setup.php:251 setup.php:252 setup.php:253 setup.php:254
 #, php-format
 msgid "%d Months"
-msgstr "%d Månader"
+msgstr "%d månader"
 
 #: setup.php:255
 #, php-format
 msgid "%d Year"
-msgstr "%d År"
+msgstr "%d år"
 
 #: setup.php:256 setup.php:257
 #, php-format
 msgid "%d Years"
-msgstr "%d År"
+msgstr "%d år"
 
 #: setup.php:261
 msgid "System Administration"

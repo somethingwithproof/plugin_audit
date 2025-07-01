@@ -4,271 +4,271 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: Automatically generated\nLanguage-Team: none\nLanguage: ka\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-07-01 04:26+0000\nLast-Translator: Ekaterine papava <papava.e@gtu.ge>\nLanguage-Team: Georgian <https://translate.cacti.net/projects/cacti/audit/ka/>\nLanguage: ka-GE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 5.11.4\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
-msgstr ""
+msgstr "გვერდი:"
 
 #: audit.php:55 audit.php:78
 msgid "User:"
-msgstr ""
+msgstr "მომხმარებელი:"
 
 #: audit.php:56 audit.php:79
 msgid "IP Address:"
-msgstr ""
+msgstr "IP მისამართი:"
 
 #: audit.php:57 audit.php:80
 msgid "Date:"
-msgstr ""
+msgstr "თარიღი:"
 
 #: audit.php:58 audit.php:81
 msgid "Action:"
-msgstr ""
+msgstr "ქმედება:"
 
 #: audit.php:60
 msgid "Script:"
-msgstr ""
+msgstr "სკრიპტი:"
 
 #: audit.php:87 audit.php:90
 msgid "Attrib"
-msgstr ""
+msgstr "ატრიბუტი"
 
 #: audit.php:87 audit.php:90
 msgid "Value"
-msgstr ""
+msgstr "მნიშვნელობა"
 
 #: audit.php:119
 msgid "Record Data:"
-msgstr ""
+msgstr "ჩანაწერის მონაცემები:"
 
 #: audit.php:143
 #, php-format
 msgid "Audit Log Purged by %s"
-msgstr ""
+msgstr "აუდიტის ჟურნალი გასუფთავდა %s-ის მიერ"
 
 #: audit.php:179
 msgctxt "Column Header used for CSV log export. Ensure that you do NOT(!) remove one of the commas. The output needs to be CSV compliant."
 msgid "page, user_id, username, action, ip_address, user_agent, event_time, post"
-msgstr ""
+msgstr "გვერდი, მომხმარებლის_id, მომხმარებლისსახელი, ქმედება, ip_მისამართი, მომხმარებლის_აგენტი, მოვლენის_დრო, პოსტი"
 
 #: audit.php:266
 msgid "Audit Log"
-msgstr ""
+msgstr "აუდიტის ჟურნალი"
 
 #: audit.php:275
 msgid "Search"
-msgstr ""
+msgstr "ძებნა"
 
 #: audit.php:281
 msgid "Page"
-msgstr ""
+msgstr "გვერდი"
 
 #: audit.php:285 audit.php:301
 msgid "All"
-msgstr ""
+msgstr "ყველა"
 
 #: audit.php:297
 msgid "User"
-msgstr ""
+msgstr "მომხმარებელი"
 
 #: audit.php:302
 msgid "cli"
-msgstr ""
+msgstr "cli"
 
 #: audit.php:314
 msgid "Events"
-msgstr ""
+msgstr "მოვლენები"
 
 #: audit.php:318
 msgid "Default"
-msgstr ""
+msgstr "ნაგულისხმევი"
 
 #: audit.php:329
 msgid "Go"
-msgstr ""
+msgstr "მიდი"
 
 #: audit.php:329
 msgid "Set/Refresh Filters"
-msgstr ""
+msgstr "ფილტრების დაყენება/განახლება"
 
 #: audit.php:332
 msgid "Clear"
-msgstr ""
+msgstr "გასუფთავება"
 
 #: audit.php:332
 msgid "Clear Filters"
-msgstr ""
+msgstr "ფილტრების გასუფთავება"
 
 #: audit.php:335
 msgid "Export"
-msgstr ""
+msgstr "გატანa"
 
 #: audit.php:335
 msgid "Export Log Events"
-msgstr ""
+msgstr "ჟურნალის მოვლენების გატანა"
 
 #: audit.php:338
 msgid "Purge"
-msgstr ""
+msgstr "გაწმენდა"
 
 #: audit.php:338
 msgid "Purge Log Events"
-msgstr ""
+msgstr "ჟურნალის მოვლენების წაშლა"
 
 #: audit.php:434
 msgid "Audit Events"
-msgstr ""
+msgstr "აუდიტის მოვლენები"
 
 #: audit.php:442
 msgid "Page Name"
-msgstr ""
+msgstr "გვერდის სახელი"
 
 #: audit.php:445
 msgid "The page where the event was generated."
-msgstr ""
+msgstr "გვერდი, სადაც მოვლენა შეიქმნა."
 
 #: audit.php:448
 msgid "User Name"
-msgstr ""
+msgstr "მომხმარებლის სახელი"
 
 #: audit.php:451
 msgid "The user who generated the event."
-msgstr ""
+msgstr "მომხმარებელი, რომელმაც შექმნა ეს მოვლენა."
 
 #: audit.php:454
 msgid "Action"
-msgstr ""
+msgstr "ქმედება"
 
 #: audit.php:457
 msgid "The Cacti Action requested.  Hover over action to see $_POST data."
-msgstr ""
+msgstr "მოთხოვნილიCacti -ის ქმედება.  გააჩერეთ ზედ თაგუნას კურსორი, რომ დაინახოთ $_POST მონაცემები."
 
 #: audit.php:460
 msgid "User Agent"
-msgstr ""
+msgstr "მომხმარებლის აგენტი"
 
 #: audit.php:463
 msgid "The browser type of the requester."
-msgstr ""
+msgstr "მომთხოვნის ბრაუზერის ტიპი."
 
 #: audit.php:466
 msgid "IP Address"
-msgstr ""
+msgstr "IP მისამართი"
 
 #: audit.php:469
 msgid "The IP Address of the requester."
-msgstr ""
+msgstr "მომთხოვნის IP მისამართი."
 
 #: audit.php:472
 msgid "Event Time"
-msgstr ""
+msgstr "მოვლენის დრო"
 
 #: audit.php:475
 msgid "The time the Event took place."
-msgstr ""
+msgstr "დრო, როცა მოვლენა მოხდა."
 
 #: audit.php:489
 msgid "N/A"
-msgstr ""
+msgstr "N/A"
 
 #: audit.php:505
 msgid "No Audit Log Events Found"
-msgstr ""
+msgstr "აუდიტის ჟურნალის მოვლენები აღმოჩენილი არაა"
 
 #: audit.php:525
 msgid "Audit Event Details"
-msgstr ""
+msgstr "აუდიტის მოვლენის დეტალები"
 
 #: setup.php:38
 msgid "View Cacti Audit Log"
-msgstr ""
+msgstr "Cacti-ის აუდიტის ჟურნალის ნახვა"
 
 #: setup.php:228 setup.php:229
 msgid "Technical Support"
-msgstr ""
+msgstr "ტექნიკური მხარდაჭერა"
 
 #: setup.php:231
 msgid "View Audit Log"
-msgstr ""
+msgstr "აუდიტის ჟურნალის ნახვა"
 
 #: setup.php:233
 msgid "Allows Administrators to view change activity on the Cacti server.  Administrators can also export the audit log for analysis purposes."
-msgstr ""
+msgstr "საშუალებას აძლევს ადმინისტრატორებს, ნახონ ცვლილების აქტივობა Cacti-ის სერვერზე.  ადმინისტრატორებს ამ ჟურნალის გადმოწერაც შეუძლიათ ანალიზისთვის."
 
 #: setup.php:248
 msgid "Indefinitely"
-msgstr ""
+msgstr "განუსაზღვრელად"
 
 #: setup.php:249
 #, php-format
 msgid "%d Weeks"
-msgstr ""
+msgstr "%d კვირა"
 
 #: setup.php:250
 #, php-format
 msgid "%d Month"
-msgstr ""
+msgstr "%d თვე"
 
 #: setup.php:251 setup.php:252 setup.php:253 setup.php:254
 #, php-format
 msgid "%d Months"
-msgstr ""
+msgstr "%d თვე"
 
 #: setup.php:255
 #, php-format
 msgid "%d Year"
-msgstr ""
+msgstr "%d წელი"
 
 #: setup.php:256 setup.php:257
 #, php-format
 msgid "%d Years"
-msgstr ""
+msgstr "%d წელი"
 
 #: setup.php:261
 msgid "System Administration"
-msgstr ""
+msgstr "სისტემის ადმინისტრირება"
 
 #: setup.php:272
 msgid "Audit Log Settings"
-msgstr ""
+msgstr "აუდიტის ჟურნალის მორგება"
 
 #: setup.php:276
 msgid "Enable Audit Log"
-msgstr ""
+msgstr "აუდიტის ჟურნალის ჩართვა"
 
 #: setup.php:277
 msgid "Check this box, if you want the Audit Log to track GUI activities."
-msgstr ""
+msgstr "დასვით ეს თოლია, თუ გნებავთ აუდიტის ჟურნალმა ინტერფეისის აქტივობებს თვალი ადევნოს."
 
 #: setup.php:282
 msgid "Audit Log Retention"
-msgstr ""
+msgstr "აუდიტის ჟურნალის შენახვა"
 
 #: setup.php:283
 msgid "How long do you wish Audit Log entries to be retained?"
-msgstr ""
+msgstr "რამდენ ხანს გნებავთ აუდიტის ჟურნალის ჩანაწერების შენარჩუნება?"
 
 #: setup.php:290
 msgid "External Audit Log"
-msgstr ""
+msgstr "გარე აუდიტის ჟურნალი"
 
 #: setup.php:291
 msgid "Check this box, if you want the Audit Log to be written to an external file."
-msgstr ""
+msgstr "დასვით ეს თოლია, თუ გნებავთ აუდიტის ჟურნალი გარე ფაილში ჩაიწეროს."
 
 #: setup.php:296
 msgid "External Audit Log Log file  Path"
-msgstr ""
+msgstr "გარე აუდიტის ჟურნალის ფაილის  ბილიკი"
 
 #: setup.php:297
 msgid "Enter the path to the external audit log file."
-msgstr ""
+msgstr "შეიყვანეთ ბილიკი გარე აუდიტის ჟურნალის ფაილისთვის."
 
 #: setup.php:305
 msgid "Audit"
-msgstr ""
+msgstr "აუდიტი"
 
 #: setup.php:316
 msgid "Audit Event Log"
-msgstr ""
+msgstr "აუდიტის მოვლენის ჟურნალი"

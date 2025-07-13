@@ -45,9 +45,9 @@ case 'purge':
 			FROM audit_log
 			WHERE id = ?',
 			array(get_filter_request_var('id')));
-	
+
 		$output = '';
-	
+
 		if ($data['action'] == 'cli') {
 			$width = 'wide';
 			$output .= '<table style="width:100%" class="' . $width . '"><tr><td>';
@@ -60,19 +60,19 @@ case 'purge':
 			$output .= '<span><b>' . __('Script:', 'audit') . '</b>  <i>' . $data['post'] . '</i></span>';
 		} elseif (cacti_sizeof($data)) {
 			$attribs = json_decode($data['post']);
-	
+
 			$nattribs = array();
 			foreach($attribs as $field => $content) {
 				$nattribs[$field] = $content;
 			}
 			ksort($nattribs);
-	
+
 			if (cacti_sizeof($nattribs) > 16) {
 				$width = 'wide';
 			} else {
 				$width = 'narrow';
 			}
-	
+
 			$output .= '<table style="width:100%" class="' . $width . '"><tr><td>';
 			$output .= '<span><b>' . __('Page:', 'audit') . '</b>  <i>' . $data['page'] . '</i></span>';
 			$output .= '<br><span><b>' . __('User:', 'audit') . '</b>  <i>' . get_username($data['user_id']) . '</i></span>';
@@ -81,7 +81,7 @@ case 'purge':
 			$output .= '<br><span><b>' . __('Action:', 'audit') . '</b>  <i>' . $data['action'] . '</i></span>';
 			$output .= '<hr>';
 			$output .= '<table style="width:100%">';
-	
+
 			if (cacti_sizeof($nattribs) > 16) {
 				$columns = 2;
 				$output .= '<tr class="tableHeader"><th style="width:25%">' . __('Attrib', 'audit') . '</th><th style="width:25%">' . __('Value', 'audit') . '</th><th style="width:25%">' . __('Attrib', 'audit') . '</th><th style="width:25%">' . __('Value', 'audit') . '</th></tr>';
@@ -89,35 +89,35 @@ case 'purge':
 				$columns = 1;
 				$output .= '<tr class="tableHeader"><th style="width:50%">' . __('Attrib', 'audit') . '</th><th style="width:50%">' . __('Value', 'audit') . '</th></tr>';
 			}
-	
+
 			$i = 0;
 			if (cacti_sizeof($nattribs)) {
 				foreach($nattribs as $field => $content) {
 					if ($i % $columns == 0) {
 						$output .= ($output != '' ? '</tr>':'') . '<tr>';
 					}
-	
+
 					if (is_array($content)) {
 						$output .= '<td style="font-weight:bold;white-space:nowrap;">' . $field . '</td><td">' . implode(',', $content) . '</td>';
 					} else {
 						$output .= '<td style="font-weight:bold;white-space:nowrap;">' . $field . '</td><td>' . $content . '</td>';
 					}
-	
+
 					$i++;
 				}
-	
+
 				if ($i % $columns > 0) {
 					$output . '<td></td><td></td></tr>';
 				}
 			}
-	
+
 			// Display the Record Data under selected_items if it is not empty
 			$recordData = json_decode($data['object_data']);
 			if (!empty($recordData)) {
 				$output .= '</table>';
 				$output .= '<tr><td colspan="' . ($columns * 2) . '"><hr></td></tr>';
 				$output .= '<tr><td colspan="' . ($columns * 2) . '"><b>' . __('Record Data:', 'audit') . '</b></td></tr>';
-	
+
 				foreach ($recordData as $record) {
 					$output .= '<tr><td colspan="' . ($columns * 2) . '"><pre>' . json_encode($record, JSON_PRETTY_PRINT) . '</pre></td></tr>';
 				}
@@ -125,11 +125,11 @@ case 'purge':
 				$output .= '</table>';
 			}
 		}
-	
+
 		// Output the final result
 		echo $output;
-	
-	
+
+
 	break;
 default:
 	top_header();
@@ -326,16 +326,12 @@ function audit_log() {
 						</select>
 					</td>
 					<td>
-						<input type='button' id='refresh' value='<?php print __esc('Go', 'audit');?>' title='<?php print __esc('Set/Refresh Filters', 'audit');?>'>
-					</td>
-					<td>
-						<input type='button' id='clear' value='<?php print __esc('Clear', 'audit');?>' title='<?php print __esc('Clear Filters', 'audit');?>'>
-					</td>
-					<td>
-						<input type='button' id='export' value='<?php print __esc('Export', 'audit');?>' title='<?php print __esc('Export Log Events', 'audit');?>'>
-					</td>
-					<td>
-						<input type='button' id='purge' value='<?php print __esc('Purge', 'audit');?>' title='<?php print __esc('Purge Log Events', 'audit');?>'>
+						<span>
+							<button type='submit' id='refresh' class='ui-state-button ui-corner-all ui-widget ui-state-active' title='<?php print __esc('Set/Refresh Filters', 'audit');?>'><?php print __esc('Go', 'audit');?></button>
+							<button type='button' id='clear' title='<?php print __esc('Clear Filters', 'audit');?>'><?php print __esc('Clear', 'audit');?></button>
+							<button type='button' id='export' title='<?php print __esc('Export Log Events', 'audit');?>'><?php print __esc('Export', 'audit');?></button>
+							<button type='button' id='purge' title='<?php print __esc('Purge Log Events', 'audit');?>'><?php print __esc('Purge', 'audit');?></button>
+						</span>
 					</td>
 				</tr>
 				</tr>
@@ -555,7 +551,7 @@ function audit_log() {
         }, function() {
             auditTimer = setTimeout(function() { close_dialog(); }, 400);
         });
-            
+
         });
 
 	function close_dialog() {

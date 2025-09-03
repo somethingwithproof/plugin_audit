@@ -217,11 +217,11 @@ function audit_config_insert() {
 		}
 
 		if ($audit_log != '' && !file_exists($audit_log)) {
-			if (is_writable($audit_log)) {
-				cacti_log('WARNING: Audit Log file does not exist.  Creating it.', false, 'AUDIT');
+			if (is_writable(dirname($audit_log))) {
+				cacti_log(sprintf('NOTE: The Audit Log file \'%s\' does not exist.  Creating it.', $audit_log), false, 'AUDIT');
 				touch($audit_log);
 			} else {
-				cacti_log('ERROR: Audit Log file does not exist and the path is not writeable.', false, 'AUDIT');
+				cacti_log(sprintf('ERROR: Audit Log file path \'%s\' does not exist and the path is not writeable.', $audit_log), false, 'AUDIT');
 			}
 		}
 

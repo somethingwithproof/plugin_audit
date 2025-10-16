@@ -4,7 +4,7 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr "Project-Id-Version: \nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-03-18 08:39+0000\nLast-Translator: Daniel Nylander <weblate@danielnylander.se>\nLanguage-Team: Swedish <http://translate.cacti.net/projects/cacti/audit/sv/>\nLanguage: sv-SE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 4.8.1\n"
+msgstr "Project-Id-Version: \nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-10-16 07:25+0000\nLast-Translator: Daniel Nylander <daniel@danielnylander.se>\nLanguage-Team: Swedish <https://translate.cacti.net/projects/cacti/audit/sv/>\nLanguage: sv-SE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 5.11.4\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
@@ -40,21 +40,21 @@ msgstr "Värde"
 
 #: audit.php:119
 msgid "Record Data:"
-msgstr "Registrera data:"
+msgstr "Dataregister:"
 
 #: audit.php:143
 #, php-format
 msgid "Audit Log Purged by %s"
-msgstr "Granskningsloggen rensas av %s"
+msgstr "Revisionsloggen tömdes av %s"
 
 #: audit.php:179
 msgctxt "Column Header used for CSV log export. Ensure that you do NOT(!) remove one of the commas. The output needs to be CSV compliant."
 msgid "page, user_id, username, action, ip_address, user_agent, event_time, post"
-msgstr "sida, user_id, användarnamn, åtgärd, ip_adress, user_agent, event_time, post"
+msgstr "page, user_id, username, action, ip_address, user_agent, event_time, post"
 
 #: audit.php:266
 msgid "Audit Log"
-msgstr "Granskningslogg"
+msgstr "Revisionslogg"
 
 #: audit.php:275
 msgid "Search"
@@ -78,7 +78,7 @@ msgstr "cli"
 
 #: audit.php:314
 msgid "Events"
-msgstr "Evenemang"
+msgstr "Händelser"
 
 #: audit.php:318
 msgid "Default"
@@ -94,11 +94,11 @@ msgstr "Ange / Uppdatera filter"
 
 #: audit.php:332
 msgid "Clear"
-msgstr "Rensa"
+msgstr "Töm"
 
 #: audit.php:332
 msgid "Clear Filters"
-msgstr "Rensa filter"
+msgstr "Töm filter"
 
 #: audit.php:335
 msgid "Export"
@@ -114,7 +114,7 @@ msgstr "Rensa"
 
 #: audit.php:338
 msgid "Purge Log Events"
-msgstr "Purge Log Events"
+msgstr "Töm logghändelser"
 
 #: audit.php:434
 msgid "Audit Events"
@@ -142,7 +142,7 @@ msgstr "Åtgärd"
 
 #: audit.php:457
 msgid "The Cacti Action requested.  Hover over action to see $_POST data."
-msgstr "Cacti Action begärde. Håll över handling för att se $ _POST data."
+msgstr "Cacti Action begärde.  Håll över åtgärd för att se $ _POST-data."
 
 #: audit.php:460
 msgid "User Agent"
@@ -150,7 +150,7 @@ msgstr "Användaragent"
 
 #: audit.php:463
 msgid "The browser type of the requester."
-msgstr "Webbläsarens typ av sökande."
+msgstr "Webbläsartyp för begäran."
 
 #: audit.php:466
 msgid "IP Address"
@@ -158,11 +158,11 @@ msgstr "IP-adress"
 
 #: audit.php:469
 msgid "The IP Address of the requester."
-msgstr "IP-adress för beställaren."
+msgstr "IP-adress för begäran."
 
 #: audit.php:472
 msgid "Event Time"
-msgstr "Tid för evenemanget"
+msgstr "Händelsetid"
 
 #: audit.php:475
 msgid "The time the Event took place."
@@ -170,19 +170,19 @@ msgstr "Den tid händelsen ägde rum."
 
 #: audit.php:489
 msgid "N/A"
-msgstr "N/A"
+msgstr "Inte tillgänglig"
 
 #: audit.php:505
 msgid "No Audit Log Events Found"
-msgstr "Inga revisionslogg händelser hittades"
+msgstr "Inga revisionsloggshändelser hittades"
 
 #: audit.php:525
 msgid "Audit Event Details"
-msgstr "Revisionshändelsesdetaljer"
+msgstr "Detaljer för revisionshändelse"
 
 #: setup.php:38
 msgid "View Cacti Audit Log"
-msgstr "Visa Cacti Audit Log"
+msgstr "Visa Cacti-revisionslogg"
 
 #: setup.php:228 setup.php:229
 msgid "Technical Support"
@@ -190,15 +190,15 @@ msgstr "Teknisk support"
 
 #: setup.php:231
 msgid "View Audit Log"
-msgstr "Visa granskningsloggen"
+msgstr "Visa revisionslogg"
 
 #: setup.php:233
 msgid "Allows Administrators to view change activity on the Cacti server.  Administrators can also export the audit log for analysis purposes."
-msgstr "Tillåter administratörer att visa förändringsaktivitet på Cacti-servern. Administratörer kan också exportera revisionsloggen för analysändamål."
+msgstr "Tillåter administratörer att visa förändringsaktivitet på Cacti-servern.  Administratörer kan också exportera revisionsloggen för analysändamål."
 
 #: setup.php:248
 msgid "Indefinitely"
-msgstr "Ingen gräns"
+msgstr "Obegränsad"
 
 #: setup.php:249
 #, php-format
@@ -227,43 +227,43 @@ msgstr "%d år"
 
 #: setup.php:261
 msgid "System Administration"
-msgstr "Systemadministratör"
+msgstr "Systemadministration"
 
 #: setup.php:272
 msgid "Audit Log Settings"
-msgstr "Audit Log Settings"
+msgstr "Inställningar för revisionslogg"
 
 #: setup.php:276
 msgid "Enable Audit Log"
-msgstr "Aktivera granskningsloggen"
+msgstr "Aktivera revisionslogg"
 
 #: setup.php:277
 msgid "Check this box, if you want the Audit Log to track GUI activities."
-msgstr "Markera den här rutan om du vill att granskningsloggen ska spåra GUI-aktiviteter."
+msgstr "Markera den här rutan om du vill att revisionsloggen ska spåra grafiska gränssnittsaktiviteter."
 
 #: setup.php:282
 msgid "Audit Log Retention"
-msgstr "Lagring av kontrolllogg"
+msgstr "Lagringstid för revisionslogg"
 
 #: setup.php:283
 msgid "How long do you wish Audit Log entries to be retained?"
-msgstr "Hur länge önskar du att revisionslogguppgifter ska behållas?"
+msgstr "Hur länge önskar du att uppgifter i revisionsloggen ska behållas?"
 
 #: setup.php:290
 msgid "External Audit Log"
-msgstr "Aktivera granskningsloggen"
+msgstr "Extern revisionslogg"
 
 #: setup.php:291
 msgid "Check this box, if you want the Audit Log to be written to an external file."
-msgstr "Markera den här rutan om du vill att granskningsloggen ska spåra GUI-aktiviteter."
+msgstr "Markera den här rutan om du vill att revisionsloggen ska skrivas till en extern fil."
 
 #: setup.php:296
 msgid "External Audit Log Log file  Path"
-msgstr "Sökväg till extern granskningsloggfil"
+msgstr "Sökväg till extern revisionsloggfil"
 
 #: setup.php:297
 msgid "Enter the path to the external audit log file."
-msgstr "Ange sökvägen till den externa granskningsloggfilen."
+msgstr "Ange sökvägen till den externa revisionsloggfilen."
 
 #: setup.php:305
 msgid "Audit"

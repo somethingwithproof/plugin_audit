@@ -4,25 +4,14 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: developers@cacti.net\n"
-"POT-Creation-Date: 2024-06-08 09:09-0400\n"
-"PO-Revision-Date: 2024-06-08 09:21-0400\n"
-"Last-Translator: Linya Huang <linya0405@gmail.com>\n"
-"Language-Team: Chinese (Traditional) <http://translate.cacti.net/projects/cacti/audit/zh_Hant/>\n"
-"Language: zh_TW\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.4.4\n"
+msgstr "Project-Id-Version: \nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2026-01-16 03:18+0000\nLast-Translator: sucharlie <su.charlie@gmail.com>\nLanguage-Team: Chinese (Traditional Han script) <https://translate.cacti.net/projects/cacti/audit/zh_Hant/>\nLanguage: zh-TW\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=1; plural=0;\nX-Generator: Weblate 5.11.4\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
 msgstr "頁面："
 
 #: audit.php:55 audit.php:78
+#, fuzzy
 msgid "User:"
 msgstr "使用者："
 
@@ -39,6 +28,7 @@ msgid "Action:"
 msgstr "行動："
 
 #: audit.php:60
+#, fuzzy
 msgid "Script:"
 msgstr "腳本"
 
@@ -47,6 +37,7 @@ msgid "Attrib"
 msgstr "屬性"
 
 #: audit.php:87 audit.php:90
+#, fuzzy
 msgid "Value"
 msgstr "值"
 
@@ -69,50 +60,62 @@ msgid "Audit Log"
 msgstr "審核日誌"
 
 #: audit.php:275
+#, fuzzy
 msgid "Search"
 msgstr "搜尋"
 
 #: audit.php:281
+#, fuzzy
 msgid "Page"
 msgstr "頁面"
 
 #: audit.php:285 audit.php:301
+#, fuzzy
 msgid "All"
 msgstr "全部"
 
 #: audit.php:297
+#, fuzzy
 msgid "User"
 msgstr "使用者"
 
 #: audit.php:302
+#, fuzzy
 msgid "cli"
 msgstr "經典"
 
 #: audit.php:314
+#, fuzzy
 msgid "Events"
 msgstr "活動"
 
 #: audit.php:318
+#, fuzzy
 msgid "Default"
-msgstr "預設"
+msgstr "默认"
 
 #: audit.php:329
+#, fuzzy
 msgid "Go"
 msgstr "送出"
 
 #: audit.php:329
+#, fuzzy
 msgid "Set/Refresh Filters"
 msgstr "設置/刷新過濾器"
 
 #: audit.php:332
+#, fuzzy
 msgid "Clear"
 msgstr "清除"
 
 #: audit.php:332
+#, fuzzy
 msgid "Clear Filters"
 msgstr "清除過濾器"
 
 #: audit.php:335
+#, fuzzy
 msgid "Export"
 msgstr "匯出"
 
@@ -121,6 +124,7 @@ msgid "Export Log Events"
 msgstr "導出日誌事件"
 
 #: audit.php:338
+#, fuzzy
 msgid "Purge"
 msgstr "清除"
 
@@ -141,6 +145,7 @@ msgid "The page where the event was generated."
 msgstr "生成事件的頁面。"
 
 #: audit.php:448
+#, fuzzy
 msgid "User Name"
 msgstr "使用者名稱"
 
@@ -149,6 +154,7 @@ msgid "The user who generated the event."
 msgstr "生成事件的用戶。"
 
 #: audit.php:454
+#, fuzzy
 msgid "Action"
 msgstr "動作"
 
@@ -165,6 +171,7 @@ msgid "The browser type of the requester."
 msgstr "請求者的瀏覽器類型。"
 
 #: audit.php:466
+#, fuzzy
 msgid "IP Address"
 msgstr "IP 位址"
 
@@ -181,6 +188,7 @@ msgid "The time the Event took place."
 msgstr "事件發生的時間。"
 
 #: audit.php:489
+#, fuzzy
 msgid "N/A"
 msgstr "不适用"
 
@@ -197,6 +205,7 @@ msgid "View Cacti Audit Log"
 msgstr "查看Cacti審核日誌"
 
 #: setup.php:228 setup.php:229
+#, fuzzy
 msgid "Technical Support"
 msgstr "การสนับสนุนทางเทคนิค"
 
@@ -215,29 +224,30 @@ msgstr "無限期"
 #: setup.php:249
 #, fuzzy, php-format
 msgid "%d Weeks"
-msgstr "最後％d週"
+msgstr "%d週"
 
 #: setup.php:250
-#, php-format
+#, fuzzy, php-format
 msgid "%d Month"
 msgstr "%d月"
 
 #: setup.php:251 setup.php:252 setup.php:253 setup.php:254
 #, fuzzy, php-format
 msgid "%d Months"
-msgstr "最後％d個月"
+msgstr "%d個月"
 
 #: setup.php:255
-#, php-format
+#, fuzzy, php-format
 msgid "%d Year"
 msgstr "%d年"
 
 #: setup.php:256 setup.php:257
 #, fuzzy, php-format
 msgid "%d Years"
-msgstr "最後％d年"
+msgstr "%d年"
 
 #: setup.php:261
+#, fuzzy
 msgid "System Administration"
 msgstr "系統管理"
 

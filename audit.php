@@ -24,6 +24,7 @@
 
 chdir('../../');
 include_once('./include/auth.php');
+include_once('./plugins/audit/ui_helpers.php');
 
 set_default_action();
 
@@ -35,9 +36,7 @@ case 'export':
 case 'purge':
 	audit_purge();
 
-	top_header();
-	audit_log();
-	bottom_footer();
+	audit_render_with_layout('audit_log');
 
 	break;
 	case 'getdata':
@@ -132,9 +131,7 @@ case 'purge':
 
 	break;
 default:
-	top_header();
-	audit_log();
-	bottom_footer();
+	audit_render_with_layout('audit_log');
 }
 
 function audit_purge() {
@@ -463,4 +460,3 @@ function audit_log() {
 	<script type='text/javascript' src='plugins/audit/js/functions.js'></script>
 	<?php
 }
-

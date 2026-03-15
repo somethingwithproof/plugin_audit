@@ -150,28 +150,14 @@ function audit_purge() {
 function audit_export_rows() {
 	process_request_vars();
 
-	/* form the 'where' clause for our main sql query */
-	if (get_request_var('filter') != '') {
-		$sql_where = 'WHERE (
-			page LIKE '    . db_qstr('%' . get_request_var('filter') . '%') . '
-			OR post LIKE ' . db_qstr('%' . get_request_var('filter') . '%') . ')';
-	} else {
-		$sql_where = '';
-	}
+	list($sql_where, $sql_params) = audit_build_filter_sql();
 
-	if (get_request_var('event_page') != '-1') {
-		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' page = ' . db_qstr(get_request_var('event_page'));
-	}
-
-	if (!isempty_request_var('user_id') && get_request_var('user_id') > '-1') {
-		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' user_id = ' . get_request_var('user_id');
-	}
-
-	$events = db_fetch_assoc("SELECT audit_log.*, user_auth.username
+	$events = db_fetch_assoc_prepared("SELECT audit_log.*, user_auth.username
 		FROM audit_log
 		LEFT JOIN user_auth
 		ON audit_log.user_id=user_auth.id
-		$sql_where");
+		$sql_where",
+		$sql_params);
 
 	if (cacti_sizeof($events)) {
 		header('Content-Disposition: attachment; filename=audit_export.csv');
@@ -252,6 +238,31 @@ function process_request_vars() {
 	/* ================= input validation ================= */
 }
 
+function audit_build_filter_sql() {
+	$sql_where  = '';
+	$sql_params = array();
+
+	if (get_request_var('filter') != '') {
+		$sql_where = 'WHERE (
+			page LIKE ?
+			OR post LIKE ?)';
+		$sql_params[] = '%' . get_request_var('filter') . '%';
+		$sql_params[] = '%' . get_request_var('filter') . '%';
+	}
+
+	if (get_request_var('event_page') != '-1') {
+		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' page = ?';
+		$sql_params[] = get_request_var('event_page');
+	}
+
+	if (!isempty_request_var('user_id') && get_request_var('user_id') > '-1') {
+		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' user_id = ?';
+		$sql_params[] = get_request_var('user_id');
+	}
+
+	return array($sql_where, $sql_params);
+}
+
 function audit_log() {
 	global $item_rows;
 
@@ -284,7 +295,10 @@ function audit_log() {
 						<select id='event_page'>
 							<option value='-1'<?php print (get_request_var('event_page') == '-1' ? ' selected>':'>') . __('All', 'audit');?></option>
 							<?php
-							$pages = array_rekey(db_fetch_assoc('SELECT DISTINCT page FROM audit_log ORDER BY page'), 'page', 'page');
+							$pages = array_rekey(db_fetch_assoc_prepared('SELECT DISTINCT page
+								FROM audit_log
+								ORDER BY page',
+								array()), 'page', 'page');
 							if (cacti_sizeof($pages)) {
 								foreach ($pages as $page) {
 									print "<option value='" . $page . "'"; if (get_request_var('event_page') == $page) { print ' selected'; } print '>' . htmlspecialchars($page) . "</option>\n";
@@ -301,7 +315,10 @@ function audit_log() {
 							<option value='-1'<?php print (get_request_var('user_id') == '-1' ? ' selected>':'>') . __('All', 'audit');?></option>
 							<option value='0'<?php print (get_request_var('user_id') == '0' ? ' selected>':'>') . __('cli', 'audit');?></option>
 							<?php
-							$users = array_rekey(db_fetch_assoc('SELECT DISTINCT user_id FROM audit_log ORDER BY user_id'), 'user_id', 'user_id');
+							$users = array_rekey(db_fetch_assoc_prepared('SELECT DISTINCT user_id
+								FROM audit_log
+								ORDER BY user_id',
+								array()), 'user_id', 'user_id');
 							if (cacti_sizeof($users)) {
 								foreach ($users as $user) {
 									if ($user == 0) continue;
@@ -344,40 +361,28 @@ function audit_log() {
 
 	html_end_box();
 
-	/* form the 'where' clause for our main sql query */
-	if (get_request_var('filter') != '') {
-		$sql_where = 'WHERE (
-			page LIKE '    . db_qstr('%' . get_request_var('filter') . '%') . '
-			OR post LIKE ' . db_qstr('%' . get_request_var('filter') . '%') . ')';
-	} else {
-		$sql_where = '';
-	}
+	list($sql_where, $sql_params) = audit_build_filter_sql();
 
-	if (get_request_var('event_page') != '-1') {
-		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' page = ' . db_qstr(get_request_var('event_page'));
-	}
-
-	if (!isempty_request_var('user_id') && get_request_var('user_id') > '-1') {
-		$sql_where .= ($sql_where != '' ? ' AND ':'WHERE ') . ' user_id = ' . get_request_var('user_id');
-	}
-
-	$total_rows = db_fetch_cell("SELECT
+	$total_rows = db_fetch_cell_prepared("SELECT
 		COUNT(*)
 		FROM audit_log
 		LEFT JOIN user_auth
 		ON audit_log.user_id=user_auth.id
-		$sql_where");
+		$sql_where",
+		$sql_params);
 
 	$sql_order = get_order_string();
-	$sql_limit = ' LIMIT ' . ($rows*(get_request_var('page')-1)) . ',' . $rows;
+	$offset = ((int)$rows * ((int)get_request_var('page') - 1));
+	$sql_limit = ' LIMIT ' . $offset . ',' . (int)$rows;
 
-	$events = db_fetch_assoc("SELECT audit_log.*, user_auth.username
+	$events = db_fetch_assoc_prepared("SELECT audit_log.*, user_auth.username
 		FROM audit_log
 		LEFT JOIN user_auth
 		ON audit_log.user_id=user_auth.id
 		$sql_where
 		$sql_order
-		$sql_limit");
+		$sql_limit",
+		$sql_params);
 
     $nav = html_nav_bar('audit.php?filter=' . get_request_var('filter'), MAX_DISPLAY_PAGES, get_request_var('page'), $rows, $total_rows, 5, __('Audit Events', 'audit'), 'page', 'main');
 
@@ -463,4 +468,3 @@ function audit_log() {
 	<script type='text/javascript' src='plugins/audit/js/functions.js'></script>
 	<?php
 }
-

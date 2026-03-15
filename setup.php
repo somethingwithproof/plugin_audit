@@ -74,7 +74,10 @@ function audit_check_upgrade() {
 
 	$info    = plugin_audit_version();
 	$current = $info['version'];
-	$old     = db_fetch_cell("SELECT version FROM plugin_config WHERE directory='audit'");
+	$old     = db_fetch_cell_prepared('SELECT version
+		FROM plugin_config
+		WHERE directory = ?',
+		array('audit'));
 	if ($current != $old) {
 		if (api_plugin_is_enabled('audit')) {
 			# may sound ridiculous, but enables new hooks
@@ -83,16 +86,18 @@ function audit_check_upgrade() {
 			db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB');
 		}
 
-		db_execute("UPDATE plugin_config
-			SET version='$current'
-			WHERE directory='audit'");
+		db_execute_prepared('UPDATE plugin_config
+			SET version = ?
+			WHERE directory = ?',
+			array($current, 'audit'));
 
-		db_execute("UPDATE plugin_config SET
-			version='" . $info['version']  . "',
-			name='"    . $info['longname'] . "',
-			author='"  . $info['author']   . "',
-			webpage='" . $info['homepage'] . "'
-			WHERE directory='" . $info['name'] . "' ");
+		db_execute_prepared('UPDATE plugin_config
+			SET version = ?,
+			name = ?,
+			author = ?,
+			webpage = ?
+			WHERE directory = ?',
+			array($info['version'], $info['longname'], $info['author'], $info['homepage'], $info['name']));
 
 		/* hook for table replication */
 		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', '1');
@@ -107,7 +112,7 @@ function audit_check_dependencies($data) {
 
 	if ($class == 'all') {
 		if (!db_table_exists('alert_log', false, $rcnn_id)) {
-			$create = db_fetch_cell('SHOW CREATE TABLE autid_log');
+			$create = db_fetch_cell_prepared('SHOW CREATE TABLE autid_log', array());
 
 			db_execute($create, false, $rcnn_id);
 		}
@@ -154,7 +159,10 @@ function audit_poller_bottom() {
 		$retention = read_config_option('audit_retention');
 
 		if ($retention > 0) {
-			db_execute('DELETE FROM audit_log WHERE event_time < FROM_UNIXTIME(' . (time() - ($retention * 86400)) . ')');
+			$delete_before = time() - ($retention * 86400);
+			db_execute_prepared('DELETE FROM audit_log
+				WHERE event_time < FROM_UNIXTIME(?)',
+				array($delete_before));
 			$rows = db_affected_rows();
 			cacti_log('NOTE: Purged ' . $rows . ' Audit Log Records from Cacti', false, 'POLLER');
 		}

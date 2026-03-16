@@ -27,9 +27,19 @@ function assert_true($label, $value) {
 $setup_contents = file_get_contents(__DIR__ . '/../setup.php');
 $audit_contents = file_get_contents(__DIR__ . '/../audit.php');
 
+assert_true('setup.php is readable', $setup_contents !== false);
+assert_true('audit.php is readable', $audit_contents !== false);
+
+$setup_contents = ($setup_contents === false ? '' : $setup_contents);
+$audit_contents = ($audit_contents === false ? '' : $audit_contents);
+
 assert_true(
 	'setup.php uses prepared plugin version lookup',
 	preg_match('/db_fetch_cell_prepared\s*\(\s*\'SELECT version\s+FROM plugin_config\s+WHERE directory = \?/s', $setup_contents) === 1
+);
+assert_true(
+	'setup.php binds audit directory parameter in version lookup',
+	preg_match('/db_fetch_cell_prepared\s*\(.*directory\s*=\s*\?.*,\s*(?:array\(\s*[\'"]audit[\'"]\s*\)|\[\s*[\'"]audit[\'"]\s*\])\s*\)/s', $setup_contents) === 1
 );
 assert_true(
 	'setup.php uses prepared plugin config updates',
@@ -38,6 +48,10 @@ assert_true(
 assert_true(
 	'setup.php uses prepared retention purge delete',
 	preg_match('/db_execute_prepared\s*\(\s*\'DELETE FROM audit_log\s+WHERE event_time < FROM_UNIXTIME\(\?\)/s', $setup_contents) === 1
+);
+assert_true(
+	'setup.php binds retention purge timestamp parameter',
+	preg_match('/db_execute_prepared\s*\(.*DELETE FROM audit_log[\s\S]*FROM_UNIXTIME\(\?\)[\s\S]*,\s*(?:array\(\s*\$delete_before\s*\)|\[\s*\$delete_before\s*\])\s*\)/s', $setup_contents) === 1
 );
 assert_true(
 	'setup.php dependency check references audit_log consistently',

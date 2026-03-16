@@ -111,8 +111,8 @@ function audit_check_dependencies($data) {
 	$class            = $data['class'];
 
 	if ($class == 'all') {
-		if (!db_table_exists('alert_log', false, $rcnn_id)) {
-			$create = db_fetch_cell_prepared('SHOW CREATE TABLE autid_log', array());
+		if (!db_table_exists('audit_log', false, $rcnn_id)) {
+			$create = db_fetch_cell_prepared('SHOW CREATE TABLE audit_log', array());
 
 			db_execute($create, false, $rcnn_id);
 		}

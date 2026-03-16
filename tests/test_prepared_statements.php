@@ -40,6 +40,12 @@ assert_true(
 	preg_match('/db_execute_prepared\s*\(\s*\'DELETE FROM audit_log\s+WHERE event_time < FROM_UNIXTIME\(\?\)/s', $setup_contents) === 1
 );
 assert_true(
+	'setup.php dependency check references audit_log consistently',
+	preg_match('/db_table_exists\s*\(\s*[\'"]audit_log[\'"]/', $setup_contents) === 1
+	&& preg_match('/SHOW CREATE TABLE\s+audit_log/i', $setup_contents) === 1
+	&& preg_match('/\b(?:alert_log|autid_log)\b/i', $setup_contents) === 0
+);
+assert_true(
 	'audit.php uses prepared page/user selector queries',
 	preg_match_all('/db_fetch_assoc_prepared\s*\(\s*\'SELECT DISTINCT (?:page|user_id)/s', $audit_contents) >= 2
 );

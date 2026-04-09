@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 function audit_process_page_data($page, $drop_action, $selected_items) {
 	$objects = array();
 	if ($drop_action !== false) {

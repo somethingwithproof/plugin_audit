@@ -1,9 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
 function audit_process_page_data($page, $drop_action, $selected_items) {
 	$objects = array();
+
+	if (!is_string($page) || $page === '' || !is_array($selected_items)) {
+		return json_encode($objects);
+	}
+
 	if ($drop_action !== false) {
 		switch ($page) {
 			case 'host.php':

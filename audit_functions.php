@@ -13,6 +13,10 @@ function audit_user_is_admin(): bool {
  */
 function audit_process_page_data(string $page, mixed $drop_action, array $selected_items): string {
 	$objects = [];
+
+	if ($page === '') {
+		return json_encode($objects);
+	}
 	if ($drop_action !== false) {
 		switch ($page) {
 			case 'host.php':

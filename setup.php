@@ -154,7 +154,7 @@ function audit_poller_bottom() {
 		$retention = read_config_option('audit_retention');
 
 		if ($retention > 0) {
-			db_execute('DELETE FROM audit_log WHERE event_time < FROM_UNIXTIME(' . (time() - ($retention * 86400)) . ')');
+			db_execute_prepared('DELETE FROM audit_log WHERE event_time < FROM_UNIXTIME(?)', array(time() - ($retention * 86400)));
 			$rows = db_affected_rows();
 			cacti_log('NOTE: Purged ' . $rows . ' Audit Log Records from Cacti', false, 'POLLER');
 		}

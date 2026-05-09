@@ -4,7 +4,7 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2024-10-17 16:22+0000\nLast-Translator: Coool (github.com/Coool) <coool@mail.lv>\nLanguage-Team: Latvian <http://translate.cacti.net/projects/cacti/audit/lv/>\nLanguage: lv-LV\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=3; plural=(n % 10 == 0 || n % 100 >= 11 && n % 100 <= 19) ? 0 : ((n % 10 == 1 && n % 100 != 11) ? 1 : 2);\nX-Generator: Weblate 4.8.1\n"
+msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2026-05-09 07:18+0000\nLast-Translator: \"Coool (github.com/Coool)\" <coool@mail.lv>\nLanguage-Team: Latvian <https://translate.cacti.net/projects/cacti/audit/lv/>\nLanguage: lv-LV\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=3; plural=(n % 10 == 0 || n % 100 >= 11 && n % 100 <= 19) ? 0 : ((n % 10 == 1 && n % 100 != 11) ? 1 : 2);\nX-Generator: Weblate 5.11.4\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
@@ -102,11 +102,11 @@ msgstr "Notīrīt filtrus"
 
 #: audit.php:335
 msgid "Export"
-msgstr "Eksportēt"
+msgstr "Izgūt"
 
 #: audit.php:335
 msgid "Export Log Events"
-msgstr "Eksportēti žurnāla notikumi"
+msgstr "Izgūt žurnāla notikumus"
 
 #: audit.php:338
 msgid "Purge"
@@ -194,7 +194,7 @@ msgstr "Skatīt revīzijas žurnālu"
 
 #: setup.php:233
 msgid "Allows Administrators to view change activity on the Cacti server.  Administrators can also export the audit log for analysis purposes."
-msgstr "Ļauj administratoriem skatīt izmaiņu aktivitāti Cacti serverī.   Administratori drīkst arī eksportēt revīzijas žurnālu analīzes nolūkos."
+msgstr "Ļauj administratoriem skatīt izmaiņu aktivitāti Cacti serverī.  Administratori var arī izgūt audita žurnālu analīzes nolūkos."
 
 #: setup.php:248
 msgid "Indefinitely"

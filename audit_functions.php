@@ -1,119 +1,123 @@
 <?php
 
 function audit_process_page_data($page, $drop_action, $selected_items) {
-	$objects = array();
+	$objects = [];
+
 	if ($drop_action !== false) {
 		switch ($page) {
 			case 'host.php':
-				//loop over array and perform query for each item
+				// loop over array and perform query for each item
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT id AS host_id,site_id,description,hostname,status,status_fail_date AS last_failed_date,status_rec_date AS last_recovered_date
 							FROM host
 							WHERE id IN (?)',
-							array($item));
-			}
+						[$item]);
+				}
+
 				break;
 			case 'host_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM host_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
-
-				case 'templates_export.php':
-					foreach ($selected_items as $item) {
-						$objects[] = db_fetch_assoc_prepared('SELECT name  FROM graph_templates
+			case 'templates_export.php':
+				foreach ($selected_items as $item) {
+					$objects[] = db_fetch_assoc_prepared('SELECT name  FROM graph_templates
 							WHERE id IN (?)',
-							array($item));
-					}
-					break;
+						[$item]);
+				}
 
-
-				case 'automation_devices.php':
-					foreach ($selected_items as $item) {
-						$result = db_fetch_assoc_prepared('SELECT id, network_id,hostname,ip,sysName,syslocation,snmp,up
+				break;
+			case 'automation_devices.php':
+				foreach ($selected_items as $item) {
+					$result = db_fetch_assoc_prepared('SELECT id, network_id,hostname,ip,sysName,syslocation,snmp,up
 							FROM automation_devices
 							WHERE id IN (?)',
-							array($item));
+						[$item]);
 
-						foreach ($result as &$row) {
-							$row['snmp'] = ($row['snmp'] == 1) ? 'UP' : 'Down';
-							$row['up'] = ($row['up'] == 1) ? 'Yes' : 'No';
-						}
-
-						$objects[] = $result;
+					foreach ($result as &$row) {
+						$row['snmp'] = ($row['snmp'] == 1) ? 'UP' : 'Down';
+						$row['up']   = ($row['up'] == 1) ? 'Yes' : 'No';
 					}
-					break;
 
+					$objects[] = $result;
+				}
 
+				break;
 			case 'graph_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM graph_templates
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'thold.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source
 						FROM thold_data
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'data_sources.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('select name_cache AS Data_Source_Name,active  from data_template_data
 						WHERE local_data_id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'data_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM data_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'aggregate_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM aggregate_graph_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'thold_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM thold_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'user_admin.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT username
 						FROM user_auth
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'user_group_admin.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM user_auth_group
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 		}
 	}
@@ -121,37 +125,36 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 	return json_encode($objects);
 }
 
-
-
 function audit_config_insert() {
 	global $action, $config;
 
 	if (audit_log_valid_event()) {
-		/* prepare post */
+		// prepare post
 		$post = $_REQUEST;
 
-		/* remove unsafe variables */
+		// remove unsafe variables
 		unset($post['__csrf_magic']);
 		unset($post['header']);
+
 		foreach ($post as $key => $value) {
 			if (preg_match('/pass|phrase/i', $key)) {
 				unset($post[$key]);
 			}
 		}
 
-		/* check if drp_action is present and update action accordingly */
+		// check if drp_action is present and update action accordingly
 		if (isset($post['drp_action']) && $post['drp_action'] == 1) {
 			$action = 'delete';
-		} else if (isset($post['drp_action']) && $post['drp_action'] == 4) {
+		} elseif (isset($post['drp_action']) && $post['drp_action'] == 4) {
 			$action = 'disable';
 		}
 
-		/* sanitize and serialize selected items */
+		// sanitize and serialize selected items
 		if (isset($post['selected_items'])) {
-			$selected_items = unserialize(stripslashes($post['selected_items']), array('allowed_classes' => false));
+			$selected_items = unserialize(stripslashes($post['selected_items']), ['allowed_classes' => false]);
 			$drop_action    = $post['drp_action'];
 		} else {
-			$selected_items = array();
+			$selected_items = [];
 			$drop_action    = false;
 		}
 
@@ -160,10 +163,10 @@ function audit_config_insert() {
 		$user_id     = (isset($_SESSION['sess_user_id']) ? $_SESSION['sess_user_id'] : 0);
 		$event_time  = date('Y-m-d H:i:s');
 
-		/* Retrieve IP address */
+		// Retrieve IP address
 		$ip_address  = get_client_addr();
 
-		/* Get the User Agent */
+		// Get the User Agent
 		$user_agent  = $_SERVER['HTTP_USER_AGENT'];
 
 		if (empty($action) && isset_request_var('action')) {
@@ -179,9 +182,11 @@ function audit_config_insert() {
 				switch ($drop_action) {
 					case 2:
 						$action = 'Delete Device';
+
 						break;
 					case 1:
 						$action = 'Create Device';
+
 						break;
 				}
 
@@ -190,9 +195,11 @@ function audit_config_insert() {
 				switch ($drop_action) {
 					case 2:
 						$action = 'Host Enabled';
+
 						break;
 					case 3:
 						$action = 'Host Disabled';
+
 						break;
 				}
 
@@ -209,7 +216,7 @@ function audit_config_insert() {
 
 		db_execute_prepared('INSERT INTO audit_log (page, user_id, action, ip_address, user_agent, event_time, post, object_data)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-			array($page, $user_id, $action, $ip_address, $user_agent, $event_time, $post, $object_data));
+			[$page, $user_id, $action, $ip_address, $user_agent, $event_time, $post, $object_data]);
 
 		if ($audit_log == '') {
 			set_config_option('audit_log_external_path', $base . '/log/audit.log');
@@ -225,8 +232,8 @@ function audit_config_insert() {
 			}
 		}
 
-		if (read_config_option('audit_log_external') == 'on' && $audit_log != '' && file_exists($audit_log))  {
-			$log_data = array(
+		if (read_config_option('audit_log_external') == 'on' && $audit_log != '' && file_exists($audit_log)) {
+			$log_data = [
 				'page'        => $page,
 				'user_id'     => $user_id,
 				'action'      => $action,
@@ -235,7 +242,7 @@ function audit_config_insert() {
 				'event_time'  => $event_time,
 				'post'        => $post,
 				'object_data' => $object_data
-			);
+			];
 
 			$log_msg = json_encode($log_data) . "\n";
 			$file    = fopen($audit_log, 'a');
@@ -249,21 +256,20 @@ function audit_config_insert() {
 		$page       = basename($_SERVER['argv'][0]);
 		$user_id    = 0;
 		$action     = 'cli';
-		$ip_address = getHostByName(php_uname('n'));
+		$ip_address = gethostbyname(php_uname('n'));
 		$user_agent = get_current_user();
 		$event_time = date('Y-m-d H:i:s');
 		$post       = implode(' ', $_SERVER['argv']);
 
-		/* don't insert poller records */
-		if (strpos($_SERVER['argv'][0], 'poller') === false &&
-			strpos($_SERVER['argv'][0], 'cmd.php') === false &&
-			strpos($_SERVER['argv'][0], '/scripts/') === false &&
+		// don't insert poller records
+		if (strpos($_SERVER['argv'][0], 'poller')         === false &&
+			strpos($_SERVER['argv'][0], 'cmd.php')           === false &&
+			strpos($_SERVER['argv'][0], '/scripts/')         === false &&
 			strpos($_SERVER['argv'][0], 'script_server.php') === false &&
-			strpos($_SERVER['argv'][0], '_process.php') === false) {
-
+			strpos($_SERVER['argv'][0], '_process.php')      === false) {
 			db_execute_prepared('INSERT INTO audit_log (page, user_id, action, ip_address, user_agent, event_time, post)
 				VALUES (?, ?, ?, ?, ?, ?, ?)',
-				array($page, $user_id, $action, $ip_address, $user_agent, $event_time, $post));
+				[$page, $user_id, $action, $ip_address, $user_agent, $event_time, $post]);
 		}
 	}
 }

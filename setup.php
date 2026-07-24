@@ -37,6 +37,7 @@ function plugin_audit_install() {
 	api_plugin_register_hook('audit', 'replicate_out',        'audit_replicate_out',        'setup.php');
 
 	api_plugin_register_realm('audit', 'audit.php', __('View Cacti Audit Log', 'audit'), 1);
+	api_plugin_register_realm('audit', 'audit_manage.php', __('Manage Cacti Audit Log', 'audit'), 1);
 
 	audit_setup_table();
 }
@@ -74,50 +75,54 @@ function audit_check_upgrade() {
 
 	$info    = plugin_audit_version();
 	$current = $info['version'];
-	$old     = db_fetch_cell("SELECT version FROM plugin_config WHERE directory='audit'");
+	$old     = db_fetch_cell_prepared('SELECT version FROM plugin_config WHERE directory = ?', array('audit'));
 	if ($current != $old) {
 		if (api_plugin_is_enabled('audit')) {
 			# may sound ridiculous, but enables new hooks
 			api_plugin_enable_hooks('audit');
-
-			db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB');
 		}
 
-		db_execute("UPDATE plugin_config
-			SET version='$current'
-			WHERE directory='audit'");
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB');
+		if (db_column_exists('audit_log', 'outcome')) {
+			if (!db_column_exists('audit_log', 'request_status')) {
+				db_execute("ALTER TABLE audit_log CHANGE COLUMN outcome request_status varchar(20) NOT NULL DEFAULT 'unknown'");
+			} else {
+				db_execute("UPDATE audit_log SET request_status = outcome WHERE request_status = 'unknown'");
+				db_execute('ALTER TABLE audit_log DROP COLUMN outcome');
+			}
+		} elseif (!db_column_exists('audit_log', 'request_status')) {
+			db_execute("ALTER TABLE audit_log ADD COLUMN request_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER action");
+		}
 
-		db_execute("UPDATE plugin_config SET
-			version='" . $info['version']  . "',
-			name='"    . $info['longname'] . "',
-			author='"  . $info['author']   . "',
-			webpage='" . $info['homepage'] . "'
-			WHERE directory='" . $info['name'] . "' ");
+		db_execute("UPDATE audit_log SET request_status = CASE request_status
+			WHEN 'attempted' THEN 'started'
+			WHEN 'request_completed' THEN 'completed'
+			WHEN 'request_failed' THEN 'failed'
+			ELSE request_status END");
+		db_execute("ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER object_data");
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_error varchar(1024) DEFAULT NULL AFTER external_status');
+
+		db_execute_prepared('UPDATE plugin_config
+			SET version = ?
+			WHERE directory = ?',
+			array($current, 'audit'));
+
+		db_execute_prepared('UPDATE plugin_config SET
+			version = ?,
+			name = ?,
+			author = ?,
+			webpage = ?
+			WHERE directory = ?',
+			array($info['version'], $info['longname'], $info['author'], $info['homepage'], $info['name']));
 
 		/* hook for table replication */
 		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', '1');
 		api_plugin_register_hook('audit', 'is_console_page', 'audit_is_console_page', 'setup.php', 1);
+		api_plugin_register_realm('audit', 'audit_manage.php', __('Manage Cacti Audit Log', 'audit'), 1);
 	}
-}
-
-function audit_check_dependencies($data) {
-	$remote_poller_id = $data['remote_poller_id'];
-	$rcnn_id          = $data['rcnn_id'];
-	$class            = $data['class'];
-
-	if ($class == 'all') {
-		if (!db_table_exists('alert_log', false, $rcnn_id)) {
-			$create = db_fetch_cell('SHOW CREATE TABLE autid_log');
-
-			db_execute($create, false, $rcnn_id);
-		}
-	}
-
-	return $data;
 }
 
 function audit_replicate_out($data) {
-	$remote_poller_id = $data['remote_poller_id'];
 	$rcnn_id          = $data['rcnn_id'];
 	$class            = $data['class'];
 
@@ -138,23 +143,46 @@ function audit_replicate_out($data) {
 				}
 			}
 		} else {
-			cacti_log('INFO: Audit Log table exists skipping', false, 'REPLICATE');
+			cacti_log('INFO: Audit Log table exists, checking schema', false, 'REPLICATE');
 		}
+
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB', true, $rcnn_id);
+		if (db_column_exists('audit_log', 'outcome', false, $rcnn_id)) {
+			if (!db_column_exists('audit_log', 'request_status', false, $rcnn_id)) {
+				db_execute("ALTER TABLE audit_log CHANGE COLUMN outcome request_status varchar(20) NOT NULL DEFAULT 'unknown'", true, $rcnn_id);
+			} else {
+				db_execute("UPDATE audit_log SET request_status = outcome WHERE request_status = 'unknown'", true, $rcnn_id);
+				db_execute('ALTER TABLE audit_log DROP COLUMN outcome', true, $rcnn_id);
+			}
+		} elseif (!db_column_exists('audit_log', 'request_status', false, $rcnn_id)) {
+			db_execute("ALTER TABLE audit_log ADD COLUMN request_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER action", true, $rcnn_id);
+		}
+
+		db_execute("UPDATE audit_log SET request_status = CASE request_status
+			WHEN 'attempted' THEN 'started'
+			WHEN 'request_completed' THEN 'completed'
+			WHEN 'request_failed' THEN 'failed'
+			ELSE request_status END", true, $rcnn_id);
+		db_execute("ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER object_data", true, $rcnn_id);
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_error varchar(1024) DEFAULT NULL AFTER external_status', true, $rcnn_id);
 	}
 
 	return $data;
 }
 
 function audit_poller_bottom() {
-	$last_check = read_config_option('audit_last_check');
+	audit_retry_external_logs();
 
-	$now = date('d');
+	$last_check = read_config_option('audit_last_check');
+	$now        = gmdate('Y-m-d');
 
 	if ($last_check != $now) {
 		$retention = read_config_option('audit_retention');
 
 		if ($retention > 0) {
-			db_execute('DELETE FROM audit_log WHERE event_time < FROM_UNIXTIME(' . (time() - ($retention * 86400)) . ')');
+			$cutoff = audit_retention_cutoff($retention);
+
+			db_execute_prepared('DELETE FROM audit_log WHERE event_time < ?', array($cutoff->format('Y-m-d H:i:s')));
 			$rows = db_affected_rows();
 			cacti_log('NOTE: Purged ' . $rows . ' Audit Log Records from Cacti', false, 'POLLER');
 		}
@@ -172,11 +200,14 @@ function audit_setup_table() {
 		`page` varchar(40) DEFAULT NULL,
 		`user_id` int(10) unsigned DEFAULT NULL,
 		`action` varchar(20) DEFAULT NULL,
+		`request_status` varchar(20) NOT NULL DEFAULT 'unknown',
 		`ip_address` varchar(40) DEFAULT NULL,
 		`user_agent` varchar(256) DEFAULT NULL,
 		`event_time` timestamp DEFAULT CURRENT_TIMESTAMP,
 		`post` longblob,
 		`object_data` longblob,
+		`external_status` varchar(20) NOT NULL DEFAULT 'unknown',
+		`external_error` varchar(1024) DEFAULT NULL,
 		PRIMARY KEY (`id`),
 		KEY `user_id` (`user_id`),
 		KEY `page` (`page`),
@@ -217,7 +248,8 @@ function audit_log_valid_event() {
 			$valid = false;
 		} elseif (strpos($_SERVER['SCRIPT_NAME'], 'auth_changepassword.php') !== false) {
 			$valid = false;
-		} elseif (isset($_POST) && sizeof($_POST)) {
+		} elseif (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' &&
+			cacti_sizeof(filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW))) {
 			$valid = true;
 		} elseif (isset_request_var('purge_continue')) {
 			$valid  = true;
@@ -301,6 +333,16 @@ function audit_config_settings() {
 			'description' => __('Check this box, if you want the Audit Log to be written to an external file.', 'audit'),
 			'method' => 'checkbox',
 			'default' => 'off'
+		),
+		'audit_log_external_format' => array(
+			'friendly_name' => __('External Audit Log Format', 'audit'),
+			'description' => __('Select the output format for external audit log records.', 'audit'),
+			'method' => 'drop_array',
+			'default' => 'json',
+			'array' => array(
+				'text' => __('Text', 'audit'),
+				'json' => __('JSON', 'audit')
+			)
 		),
 		'audit_log_external_path' => array(
 			'friendly_name' => __('External Audit Log Log file  Path', 'audit'),

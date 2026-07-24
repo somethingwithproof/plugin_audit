@@ -172,6 +172,20 @@ jobs:
       run: |
         cd ${{ github.workspace }}/cacti
         sudo php cli/plugin_manage.php --plugin=audit --install --enable
+
+    - name: Verify Audit Schema
+      run: |
+        COLUMN_COUNT=$(mysql -u cactiuser -p'cactiuser' -h 127.0.0.1 cacti -se "
+          SELECT COUNT(*)
+          FROM information_schema.columns
+          WHERE table_schema = 'cacti'
+            AND table_name = 'audit_log'
+            AND column_name IN ('request_status', 'external_status', 'external_error');
+        ")
+        if [ "$COLUMN_COUNT" -ne 3 ]; then
+          echo "Audit schema security columns are missing"
+          exit 1
+        fi
     
     - name: Check PHP Syntax for Plugin
       run: |
@@ -180,6 +194,12 @@ jobs:
           echo "Syntax errors found!"
           exit 1
         fi
+
+    - name: Run Audit Security Helper Tests
+      run: |
+        cd ${{ github.workspace }}/cacti/plugins/audit
+        php tests/security_functions_test.php
+        php tests/controller_security_test.php
     
     
     - name: Run Cacti Poller
@@ -222,4 +242,8 @@ jobs:
           exit 1
         fi
 
-
+        CLI_STATUS=$(mysql -u cactiuser -p'cactiuser' -h 127.0.0.1 cacti -se "select request_status from audit_log where action = 'cli' order by id desc limit 1;")
+        if [ "$CLI_STATUS" != "started" ]; then
+          echo "Unexpected CLI request status: $CLI_STATUS"
+          exit 1
+        fi

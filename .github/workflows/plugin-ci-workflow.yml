@@ -238,3 +238,8 @@ jobs:
           exit 1
         fi
 
+        CLI_STATUS=$(mysql -u cactiuser -p'cactiuser' -h 127.0.0.1 cacti -se "select request_status from audit_log where action = 'cli' order by id desc limit 1;")
+        if [ "$CLI_STATUS" != "completed" ]; then
+          echo "Unexpected CLI request status: $CLI_STATUS"
+          exit 1
+        fi

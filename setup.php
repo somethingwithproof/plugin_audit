@@ -37,10 +37,67 @@ function plugin_audit_install() {
 	/* hook for table replication */
 	api_plugin_register_hook('audit', 'replicate_out',        'audit_replicate_out',        'setup.php');
 
-	api_plugin_register_realm('audit', 'audit.php', __('View Cacti Audit Log', 'audit'), 1);
-	api_plugin_register_realm('audit', 'audit_manage.php', __('Manage Cacti Audit Log', 'audit'), 1);
+	audit_setup_realms(true);
 
 	audit_setup_table();
+}
+
+function audit_setup_realms($grant_installing_user = false) {
+	$realms = array(
+		'audit.php'        => __('Audit Log User', 'audit'),
+		'audit_manage.php' => __('Audit Log Admin', 'audit')
+	);
+
+	foreach ($realms as $file => $display) {
+		api_plugin_register_realm('audit', $file, $display, $grant_installing_user ? 1 : 0);
+	}
+
+	if (!$grant_installing_user) {
+		$admin_user = (int) read_config_option('admin_user');
+
+		if ($admin_user > 0) {
+			$realm_ids = db_fetch_assoc_prepared('SELECT id + 100 AS realm_id
+				FROM plugin_realms
+				WHERE plugin = ?
+				AND file IN (?, ?)',
+				array('audit', 'audit.php', 'audit_manage.php'));
+
+			foreach ($realm_ids as $realm) {
+				db_execute_prepared('REPLACE INTO user_auth_realm
+					(user_id, realm_id)
+					VALUES (?, ?)',
+					array($admin_user, $realm['realm_id']));
+			}
+		}
+	}
+}
+
+function audit_remove_deprecated_realms() {
+	$realms = db_fetch_assoc_prepared('SELECT id
+		FROM plugin_realms
+		WHERE plugin = ?
+		AND file = ?',
+		array('audit', 'audit_purge.php'));
+
+	foreach ($realms as $realm) {
+		$realm_id = $realm['id'] + 100;
+
+		db_execute_prepared('DELETE FROM user_auth_realm
+			WHERE realm_id = ?',
+			array($realm_id));
+
+		db_execute_prepared('DELETE FROM user_auth_group_realm
+			WHERE realm_id = ?',
+			array($realm_id));
+
+		db_execute_prepared('DELETE FROM plugin_realms
+			WHERE id = ?',
+			array($realm['id']));
+	}
+
+	if (cacti_sizeof($realms)) {
+		api_plugin_replicate_config();
+	}
 }
 
 function plugin_audit_uninstall() {
@@ -103,6 +160,8 @@ function audit_check_upgrade() {
 		db_execute("ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER object_data");
 		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_error varchar(1024) DEFAULT NULL AFTER external_status');
 		audit_upgrade_event_schema();
+		audit_setup_realms();
+		audit_remove_deprecated_realms();
 
 		db_execute_prepared('UPDATE plugin_config
 			SET version = ?
@@ -121,7 +180,6 @@ function audit_check_upgrade() {
 		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', '1');
 		api_plugin_register_hook('audit', 'is_console_page', 'audit_is_console_page', 'setup.php', 1);
 		api_plugin_register_hook('audit', 'logout_pre_session_destroy', 'audit_logout_pre_session_destroy', 'setup.php', 1);
-		api_plugin_register_realm('audit', 'audit_manage.php', __('Manage Cacti Audit Log', 'audit'), 1);
 	}
 }
 
@@ -378,7 +436,7 @@ function audit_config_arrays() {
 	$menu[__('Utilities')]['plugins/audit/audit.php'] = __('Audit Log', 'audit');
 
 	if (function_exists('auth_augment_roles')) {
-		auth_augment_roles(__('System Administration'), array('audit.php'));
+		auth_augment_roles(__('Audit Plugin', 'audit'), array('audit.php', 'audit_manage.php'));
 	}
 
 	audit_check_upgrade();

@@ -39,7 +39,7 @@ case 'purge':
 		exit;
 	}
 
-	if (!api_plugin_user_realm_auth('audit_manage.php') || !csrf_check(false)) {
+	if (!audit_user_is_admin() || !csrf_check(false)) {
 		http_response_code(403);
 		exit;
 	}
@@ -92,6 +92,9 @@ function audit_render_event_details($data) {
 	$output .= '<br><span><b>' . __('Event ID:', 'audit') . '</b>  <i>' . html_escape($data['event_uuid']) . '</i></span>';
 	$output .= '<br><span><b>' . __('Request Status:', 'audit') . '</b>  <i>' . html_escape($data['request_status']) . '</i></span>';
 	$output .= '<br><span><b>' . __('Operation Outcome:', 'audit') . '</b>  <i>' . html_escape($data['operation_outcome']) . '</i></span>';
+	if ($data['outcome_reason'] != '') {
+		$output .= '<br><span><b>' . __('Outcome Reason:', 'audit') . '</b>  <i>' . html_escape($data['outcome_reason']) . '</i></span>';
+	}
 	$output .= '<br><span><b>' . __('External Delivery:', 'audit') . '</b>  <i>' . html_escape($data['external_status']) . '</i></span>';
 	if ($data['external_error'] != '') {
 		$output .= '<br><span><b>' . __('External Error:', 'audit') . '</b>  <i>' . html_escape($data['external_error']) . '</i></span>';
@@ -407,7 +410,7 @@ function audit_log() {
 							<button type='submit' id='refresh' class='ui-button ui-corner-all ui-widget ui-state-active' title='<?php print __esc('Set/Refresh Filters', 'audit');?>'><?php print __esc('Go', 'audit');?></button>
 							<button type='button' id='clear' class='ui-button ui-corner-all ui-widget' title='<?php print __esc('Clear Filters', 'audit');?>'><?php print __esc('Clear', 'audit');?></button>
 							<button type='button' id='export' class='ui-button ui-corner-all ui-widget' title='<?php print __esc('Export Log Events', 'audit');?>'><?php print __esc('Export', 'audit');?></button>
-							<?php if (api_plugin_user_realm_auth('audit_manage.php')) {?>
+							<?php if (audit_user_is_admin()) {?>
 							<button type='button' id='purge' class='ui-button ui-corner-all ui-widget' data-confirm='<?php print __esc('Permanently purge all audit log events?', 'audit');?>' title='<?php print __esc('Purge Log Events', 'audit');?>'><?php print __esc('Purge', 'audit');?></button>
 							<?php }?>
 						</span>

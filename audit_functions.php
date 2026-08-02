@@ -1,125 +1,134 @@
 <?php
 
-require_once dirname(__FILE__) . '/audit_syslog.php';
+require_once __DIR__ . '/audit_syslog.php';
 
-function audit_user_is_admin() {
+function audit_user_is_admin(): bool {
 	return api_plugin_user_realm_auth('audit_manage.php');
 }
 
-function audit_process_page_data($page, $drop_action, $selected_items) {
-	$objects = array();
+/**
+ * @param array<int,string> $selected_items
+ */
+function audit_process_page_data(string $page, mixed $drop_action, array $selected_items): string {
+	$objects = [];
+
 	if ($drop_action !== false) {
 		switch ($page) {
 			case 'host.php':
-				//loop over array and perform query for each item
+				// loop over array and perform query for each item
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT id AS host_id,site_id,description,hostname,status,status_fail_date AS last_failed_date,status_rec_date AS last_recovered_date
 							FROM host
 							WHERE id IN (?)',
-							array($item));
-			}
+						[$item]);
+				}
+
 				break;
 			case 'host_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM host_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
-
-				case 'templates_export.php':
-					foreach ($selected_items as $item) {
-						$objects[] = db_fetch_assoc_prepared('SELECT name  FROM graph_templates
+			case 'templates_export.php':
+				foreach ($selected_items as $item) {
+					$objects[] = db_fetch_assoc_prepared('SELECT name  FROM graph_templates
 							WHERE id IN (?)',
-							array($item));
-					}
-					break;
+						[$item]);
+				}
 
-
-				case 'automation_devices.php':
-					foreach ($selected_items as $item) {
-						$result = db_fetch_assoc_prepared('SELECT id, network_id,hostname,ip,sysName,syslocation,snmp,up
+				break;
+			case 'automation_devices.php':
+				foreach ($selected_items as $item) {
+					$result = db_fetch_assoc_prepared('SELECT id, network_id,hostname,ip,sysName,syslocation,snmp,up
 							FROM automation_devices
 							WHERE id IN (?)',
-							array($item));
+						[$item]);
 
+					if (is_array($result)) {
 						foreach ($result as &$row) {
 							$row['snmp'] = ($row['snmp'] == 1) ? 'UP' : 'Down';
-							$row['up'] = ($row['up'] == 1) ? 'Yes' : 'No';
+							$row['up']   = ($row['up'] == 1) ? 'Yes' : 'No';
 						}
 
 						$objects[] = $result;
 					}
-					break;
+				}
 
-
+				break;
 			case 'graph_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM graph_templates
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'thold.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source
 						FROM thold_data
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'data_sources.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('select name_cache AS Data_Source_Name,active  from data_template_data
 						WHERE local_data_id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'data_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM data_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'aggregate_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM aggregate_graph_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
-				break;
 
+				break;
 			case 'thold_templates.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM thold_template
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'user_admin.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT username
 						FROM user_auth
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 			case 'user_group_admin.php':
 				foreach ($selected_items as $item) {
 					$objects[] = db_fetch_assoc_prepared('SELECT name
 						FROM user_auth_group
 						WHERE id IN (?)',
-						array($item));
+						[$item]);
 				}
+
 				break;
 		}
 	}
@@ -127,16 +136,16 @@ function audit_process_page_data($page, $drop_action, $selected_items) {
 	return audit_json_encode($objects);
 }
 
-function audit_is_sensitive_key($key) {
+function audit_is_sensitive_key(mixed $key): int|false {
 	return preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
 }
 
-function audit_redact_sensitive_data($data) {
+function audit_redact_sensitive_data(mixed $data): mixed {
 	if (!is_array($data)) {
 		return $data;
 	}
 
-	$redacted = array();
+	$redacted = [];
 
 	foreach ($data as $key => $value) {
 		if (audit_is_sensitive_key($key)) {
@@ -151,7 +160,7 @@ function audit_redact_sensitive_data($data) {
 	return $redacted;
 }
 
-function audit_redact_sensitive_value($value) {
+function audit_redact_sensitive_value(mixed $value): mixed {
 	if (!is_string($value)) {
 		return $value;
 	}
@@ -165,9 +174,9 @@ function audit_redact_sensitive_value($value) {
 	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value);
 }
 
-function audit_bound_log_data($data, $depth = 0, $state = null) {
+function audit_bound_log_data(mixed $data, int $depth = 0, ?object $state = null): mixed {
 	if ($state === null) {
-		$state = (object) array('fields' => 0);
+		$state = (object) ['fields' => 0];
 	}
 
 	if ($depth >= 12) {
@@ -175,11 +184,13 @@ function audit_bound_log_data($data, $depth = 0, $state = null) {
 	}
 
 	if (is_array($data)) {
-		$bounded = array();
+		$bounded = [];
 
 		foreach ($data as $key => $value) {
+			// @phpstan-ignore-next-line (property.notFound: dynamic property on stdClass state object)
 			if ($state->fields >= 1000) {
 				$bounded['audit_truncated'] = 'Additional fields were omitted.';
+
 				break;
 			}
 
@@ -197,66 +208,76 @@ function audit_bound_log_data($data, $depth = 0, $state = null) {
 	return $data;
 }
 
-function audit_redact_cli_arguments($arguments) {
-	$redacted = array();
+/**
+ * @param  array<int,string> $arguments
+ * @return array<int,string>
+ */
+function audit_redact_cli_arguments(array $arguments): array {
+	$redacted    = [];
 	$redact_next = false;
 
 	foreach ($arguments as $argument) {
 		if ($redact_next) {
-			$redacted[] = '[REDACTED]';
+			$redacted[]  = '[REDACTED]';
 			$redact_next = false;
+
 			continue;
 		}
 
 		if (preg_match('/^(--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)[^=]*)=(.*)$/i', $argument, $matches)) {
 			$redacted[] = $matches[1] . '=[REDACTED]';
+
 			continue;
 		}
 
 		if (preg_match('/^--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', $argument)) {
-			$redacted[] = $argument;
+			$redacted[]  = $argument;
 			$redact_next = true;
+
 			continue;
 		}
 
-		$redacted[] = preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $argument);
+		$redacted[] = preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $argument) ?? $argument;
 	}
 
 	return $redacted;
 }
 
-function audit_json_encode($data, $options = 0) {
+function audit_json_encode(mixed $data, int $options = 0): string {
 	$json = json_encode(audit_bound_log_data($data), JSON_INVALID_UTF8_SUBSTITUTE | $options, 16);
 
 	if ($json === false) {
-		return json_encode(array('audit_encoding_error' => json_last_error_msg()));
+		$fallback = json_encode(['audit_encoding_error' => json_last_error_msg()]);
+
+		return $fallback !== false ? $fallback : '{}';
 	}
 
 	return $json;
 }
 
-function audit_json_decode($json, &$error = null) {
+function audit_json_decode(mixed $json, ?string &$error = null): mixed {
 	$error = null;
 
 	try {
 		return json_decode($json, true, 16, JSON_THROW_ON_ERROR);
 	} catch (Throwable $exception) {
 		$error = $exception->getMessage();
+
 		return null;
 	}
 }
 
-function audit_uuid_v4() {
-	$bytes = random_bytes(16);
+function audit_uuid_v4(): string {
+	$bytes    = random_bytes(16);
 	$bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
 	$bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-	$hex = bin2hex($bytes);
+	$hex      = bin2hex($bytes);
 
 	return substr($hex, 0, 8) . '-' . substr($hex, 8, 4) . '-' .
 		substr($hex, 12, 4) . '-' . substr($hex, 16, 4) . '-' . substr($hex, 20);
 }
 
-function audit_request_correlation_id() {
+function audit_request_correlation_id(): string {
 	static $correlation_id;
 
 	if ($correlation_id === null) {
@@ -266,7 +287,7 @@ function audit_request_correlation_id() {
 	return $correlation_id;
 }
 
-function audit_utc_time($microtime = null) {
+function audit_utc_time(?float $microtime = null): string {
 	$microtime = $microtime === null ? microtime(true) : $microtime;
 	$seconds   = (int) $microtime;
 	$micros    = (int) round(($microtime - $seconds) * 1000000);
@@ -279,8 +300,11 @@ function audit_utc_time($microtime = null) {
 	return gmdate('Y-m-d H:i:s', $seconds) . '.' . sprintf('%06d', $micros);
 }
 
-function audit_event_integrity_hash($event) {
-	$material = array(
+/**
+ * @param array<string,mixed> $event
+ */
+function audit_event_integrity_hash(array $event): string {
+	$material = [
 		'event_uuid'       => $event['event_uuid'] ?? '',
 		'correlation_id'   => $event['correlation_id'] ?? '',
 		'event_type'       => $event['event_type'] ?? '',
@@ -291,31 +315,35 @@ function audit_event_integrity_hash($event) {
 		'target_type'      => $event['target_type'] ?? '',
 		'target_id'        => $event['target_id'] ?? '',
 		'details'          => $event['details'] ?? ''
-	);
+	];
 
 	return hash('sha256', audit_json_encode($material, JSON_UNESCAPED_SLASHES));
 }
 
-function audit_event_type_for_request($page, $action) {
+function audit_event_type_for_request(mixed $page, mixed $action): string {
 	$page_name = preg_replace('/\.php$/', '', (string) $page);
-	$page_name = preg_replace('/[^a-z0-9_]+/i', '_', $page_name);
+	$page_name = preg_replace('/[^a-z0-9_]+/i', '_', $page_name ?? '');
 	$verb      = preg_replace('/[^a-z0-9_]+/i', '_', strtolower((string) $action));
-	$verb      = trim($verb, '_');
+	$verb      = trim($verb ?? '', '_');
 
 	return 'cacti.' . ($page_name !== '' ? $page_name : 'request') . '.' .
 		($verb !== '' && $verb !== 'none' ? $verb : 'submitted');
 }
 
-function audit_external_event_data($event) {
-	$fields = array(
+/**
+ * @param  array<string,mixed> $event
+ * @return array<string,mixed>
+ */
+function audit_external_event_data(array $event): array {
+	$fields = [
 		'id', 'event_uuid', 'correlation_id', 'event_type', 'event_category',
 		'severity', 'actor_type', 'page', 'user_id', 'action', 'request_status',
 		'operation_outcome', 'outcome_reason', 'target_type', 'target_id',
 		'ip_address', 'user_agent', 'http_method', 'http_status', 'event_time',
 		'completed_time', 'duration_ms', 'post', 'object_data', 'details',
 		'previous_hash', 'integrity_hash'
-	);
-	$data = array();
+	];
+	$data = [];
 
 	foreach ($fields as $field) {
 		$data[$field] = $event[$field] ?? null;
@@ -324,9 +352,12 @@ function audit_external_event_data($event) {
 	return $data;
 }
 
-function audit_external_log_format($data, $format = 'json') {
+/**
+ * @param array<string,mixed> $data
+ */
+function audit_external_log_format(array $data, string $format = 'json'): string {
 	if ($format === 'text') {
-		$fields = array();
+		$fields = [];
 
 		foreach ($data as $name => $value) {
 			if (is_array($value) || is_object($value)) {
@@ -338,8 +369,8 @@ function audit_external_log_format($data, $format = 'json') {
 			}
 
 			$value = str_replace(
-				array('\\', "\r", "\n", "\t", '"'),
-				array('\\\\', '\r', '\n', '\t', '\"'),
+				['\\', "\r", "\n", "\t", '"'],
+				['\\\\', '\r', '\n', '\t', '\"'],
 				(string) $value
 			);
 			$fields[] = $name . '="' . $value . '"';
@@ -348,7 +379,7 @@ function audit_external_log_format($data, $format = 'json') {
 		return implode(' ', $fields) . "\n";
 	}
 
-	foreach (array('post', 'object_data', 'details') as $name) {
+	foreach (['post', 'object_data', 'details'] as $name) {
 		if (isset($data[$name]) && is_string($data[$name])) {
 			$decoded = audit_json_decode($data[$name], $error);
 
@@ -361,7 +392,7 @@ function audit_external_log_format($data, $format = 'json') {
 	return audit_json_encode($data, JSON_UNESCAPED_SLASHES) . "\n";
 }
 
-function audit_csv_safe_cell($value) {
+function audit_csv_safe_cell(mixed $value): string {
 	$value = (string) $value;
 
 	if (preg_match('/^[=+\-@]/', ltrim($value))) {
@@ -371,7 +402,7 @@ function audit_csv_safe_cell($value) {
 	return $value;
 }
 
-function audit_retention_cutoff($retention, $now = null) {
+function audit_retention_cutoff(mixed $retention, ?DateTimeImmutable $now = null): DateTimeImmutable {
 	$now = $now instanceof DateTimeImmutable
 		? $now->setTimezone(new DateTimeZone('UTC'))
 		: new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -379,20 +410,24 @@ function audit_retention_cutoff($retention, $now = null) {
 	return $now->sub(new DateInterval('P' . max(0, (int) $retention) . 'D'));
 }
 
-function audit_append_external_log($path, $message) {
+/**
+ * @return array<string,string>
+ */
+function audit_append_external_log(string $path, string $message): array {
 	if ($path == '' || !is_file($path) || is_link($path)) {
-		return array('status' => 'failed', 'error' => 'Destination is not a regular file or is a symbolic link.');
+		return ['status' => 'failed', 'error' => 'Destination is not a regular file or is a symbolic link.'];
 	}
 
 	$written = file_put_contents($path, $message, FILE_APPEND | LOCK_EX);
+
 	if ($written !== strlen($message)) {
-		return array('status' => 'failed', 'error' => 'Unable to append a complete record.');
+		return ['status' => 'failed', 'error' => 'Unable to append a complete record.'];
 	}
 
-	return array('status' => 'delivered', 'error' => '');
+	return ['status' => 'delivered', 'error' => ''];
 }
 
-function audit_set_external_status($id, $status, $error = '') {
+function audit_set_external_status(int $id, string $status, string $error = ''): void {
 	db_execute_prepared('UPDATE audit_log
 		SET external_status = ?,
 			external_error = ?,
@@ -400,22 +435,25 @@ function audit_set_external_status($id, $status, $error = '') {
 			external_last_attempt = UTC_TIMESTAMP(6),
 			external_delivered_time = CASE WHEN ? = "delivered" THEN UTC_TIMESTAMP(6) ELSE external_delivered_time END
 		WHERE id = ?',
-		array($status, $error, $status, $id));
+		[$status, $error, $status, $id]);
 }
 
-function audit_deliver_external_event($id) {
+function audit_deliver_external_event(int $id): void {
 	if (read_config_option('audit_log_external') != 'on') {
 		return;
 	}
 
-	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', array($id));
-	if (!cacti_sizeof($event) || $event['request_status'] == 'started') {
+	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
+
+	if (!is_array($event) || $event === [] || ($event['request_status'] ?? '') === 'started') {
 		return;
 	}
 
 	$path = read_config_option('audit_log_external_path');
+
 	if ($path == '' || !is_file($path) || is_link($path)) {
 		audit_set_external_status($id, 'failed', 'Destination is not a regular file or is a symbolic link.');
+
 		return;
 	}
 
@@ -425,12 +463,13 @@ function audit_deliver_external_event($id) {
 	audit_set_external_status($id, $delivery['status'], $delivery['error']);
 }
 
-function audit_retry_external_logs() {
+function audit_retry_external_logs(): void {
 	if (read_config_option('audit_log_external') != 'on') {
 		return;
 	}
 
 	$path = read_config_option('audit_log_external_path');
+
 	if ($path == '' || !is_file($path) || is_link($path)) {
 		return;
 	}
@@ -445,19 +484,24 @@ function audit_retry_external_logs() {
 		ORDER BY id
 		LIMIT 100");
 
-	foreach ($events as $event) {
-		$message  = audit_external_log_format(audit_external_event_data($event), $format);
-		$delivery = audit_append_external_log($path, $message);
-		audit_set_external_status($event['id'], $delivery['status'], $delivery['error']);
+	if (is_array($events)) {
+		foreach ($events as $event) {
+			$message  = audit_external_log_format(audit_external_event_data($event), $format);
+			$delivery = audit_append_external_log($path, $message);
+			audit_set_external_status($event['id'], $delivery['status'], $delivery['error']);
 
-		if ($delivery['status'] != 'delivered') {
-			break;
+			if ($delivery['status'] != 'delivered') {
+				break;
+			}
 		}
 	}
 }
 
-function audit_request_status($error = null, $status_code = 200) {
-	$fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
+/**
+ * @param array<string,mixed> $error
+ */
+function audit_request_status(?array $error = null, int $status_code = 200): string {
+	$fatal_types = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR];
 
 	if ((is_array($error) && in_array($error['type'] ?? null, $fatal_types, true)) ||
 		$status_code >= 400) {
@@ -467,21 +511,27 @@ function audit_request_status($error = null, $status_code = 200) {
 	return 'completed';
 }
 
-function audit_operation_verifier_for_request($page, $post) {
+/**
+ * @param  array<string,mixed>      $post
+ * @return array<string,mixed>|null
+ */
+function audit_operation_verifier_for_request(string $page, array $post): ?array {
 	if ($page != 'user_admin.php' || !array_key_exists('save_component_realm_perms', $post)) {
 		return null;
 	}
 
 	$target_user_id = $post['id'] ?? null;
+
 	if (!is_scalar($target_user_id) ||
 		!preg_match('/^[1-9][0-9]*$/', (string) $target_user_id)) {
-		return array(
-			'type' => 'invalid',
+		return [
+			'type'           => 'invalid',
 			'outcome_reason' => 'realm_permissions_request_invalid'
-		);
+		];
 	}
 
-	$expected_realm_ids = array();
+	$expected_realm_ids = [];
+
 	foreach ($post as $field => $value) {
 		$field = (string) $field;
 
@@ -490,10 +540,10 @@ function audit_operation_verifier_for_request($page, $post) {
 		}
 
 		if (!preg_match('/^section([1-9][0-9]*)$/', $field, $matches)) {
-			return array(
-				'type' => 'invalid',
+			return [
+				'type'           => 'invalid',
 				'outcome_reason' => 'realm_permissions_request_invalid'
-			);
+			];
 		}
 
 		$expected_realm_ids[] = (int) $matches[1];
@@ -502,55 +552,59 @@ function audit_operation_verifier_for_request($page, $post) {
 	$expected_realm_ids = array_values(array_unique($expected_realm_ids));
 	sort($expected_realm_ids, SORT_NUMERIC);
 
-	return array(
-		'type' => 'user_realm_permissions',
-		'target_user_id' => (int) $target_user_id,
+	return [
+		'type'               => 'user_realm_permissions',
+		'target_user_id'     => (int) $target_user_id,
 		'expected_realm_ids' => $expected_realm_ids
-	);
+	];
 }
 
-function audit_verify_operation($verifier) {
+/**
+ * @return array<string,mixed>
+ */
+function audit_verify_operation(mixed $verifier): array {
 	if (!is_array($verifier) || empty($verifier['type'])) {
-		return array('outcome' => 'unknown', 'reason' => null);
+		return ['outcome' => 'unknown', 'reason' => null];
 	}
 
 	if ($verifier['type'] == 'invalid') {
-		return array(
+		return [
 			'outcome' => 'unknown',
-			'reason' => $verifier['outcome_reason'] ?? 'verification_request_invalid'
-		);
+			'reason'  => $verifier['outcome_reason'] ?? 'verification_request_invalid'
+		];
 	}
 
 	if ($verifier['type'] != 'user_realm_permissions') {
-		return array('outcome' => 'unknown', 'reason' => 'verification_type_unsupported');
+		return ['outcome' => 'unknown', 'reason' => 'verification_type_unsupported'];
 	}
 
-	$target_user_id = (int) ($verifier['target_user_id'] ?? 0);
-	$expected_realm_ids = $verifier['expected_realm_ids'] ?? array();
-	$user_count = db_fetch_cell_prepared('SELECT COUNT(*) FROM user_auth WHERE id = ?', array($target_user_id));
+	$target_user_id     = (int) ($verifier['target_user_id'] ?? 0);
+	$expected_realm_ids = $verifier['expected_realm_ids'] ?? [];
+	$user_count         = db_fetch_cell_prepared('SELECT COUNT(*) FROM user_auth WHERE id = ?', [$target_user_id]);
 
 	if ($user_count === false) {
-		return array('outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed');
+		return ['outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed'];
 	}
 
 	if ((int) $user_count !== 1) {
-		return array('outcome' => 'failure', 'reason' => 'target_user_not_found');
+		return ['outcome' => 'failure', 'reason' => 'target_user_not_found'];
 	}
 
 	$rows = db_fetch_assoc_prepared('SELECT realm_id
 		FROM user_auth_realm
 		WHERE user_id = ?
 		ORDER BY realm_id',
-		array($target_user_id));
+		[$target_user_id]);
 
 	if (!is_array($rows)) {
-		return array('outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed');
+		return ['outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed'];
 	}
 
-	$actual_realm_ids = array();
+	$actual_realm_ids = [];
+
 	foreach ($rows as $row) {
 		if (!isset($row['realm_id']) || !is_numeric($row['realm_id'])) {
-			return array('outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed');
+			return ['outcome' => 'unknown', 'reason' => 'realm_permissions_verification_failed'];
 		}
 
 		$actual_realm_ids[] = (int) $row['realm_id'];
@@ -560,26 +614,29 @@ function audit_verify_operation($verifier) {
 	sort($actual_realm_ids, SORT_NUMERIC);
 
 	if ($actual_realm_ids === $expected_realm_ids) {
-		return array('outcome' => 'success', 'reason' => 'realm_permissions_verified');
+		return ['outcome' => 'success', 'reason' => 'realm_permissions_verified'];
 	}
 
-	return array('outcome' => 'failure', 'reason' => 'realm_permissions_mismatch');
+	return ['outcome' => 'failure', 'reason' => 'realm_permissions_mismatch'];
 }
 
-function audit_finalize_request($id, $started_at = null, $verifier = null) {
-	$status_code = http_response_code();
-	$status_code = is_int($status_code) ? $status_code : 200;
+/**
+ * @param array<string,mixed>|null $verifier
+ */
+function audit_finalize_request(int $id, ?float $started_at = null, ?array $verifier = null): void {
+	$status_code    = http_response_code();
+	$status_code    = is_int($status_code) ? $status_code : 200;
 	$request_status = audit_request_status(error_get_last(), $status_code);
-	$outcome = $request_status == 'failed' ? 'failure' : 'unknown';
+	$outcome        = $request_status == 'failed' ? 'failure' : 'unknown';
 	$outcome_reason = $request_status == 'failed' ? 'request_failed' : null;
 
 	if ($request_status == 'completed' && $verifier !== null) {
-		$verification = audit_verify_operation($verifier);
-		$outcome = $verification['outcome'];
+		$verification   = audit_verify_operation($verifier);
+		$outcome        = $verification['outcome'];
 		$outcome_reason = $verification['reason'];
 	}
 
-	$duration_ms = $started_at === null ? null : max(0, (int) round((microtime(true) - $started_at) * 1000));
+	$duration_ms    = $started_at === null ? null : max(0, (int) round((microtime(true) - $started_at) * 1000));
 	$completed_time = audit_utc_time();
 
 	db_execute_prepared("UPDATE audit_log
@@ -591,19 +648,23 @@ function audit_finalize_request($id, $started_at = null, $verifier = null) {
 			duration_ms = ?
 		WHERE id = ?
 		AND request_status = 'started'",
-		array($request_status, $outcome_reason, $outcome, $status_code, $completed_time, $duration_ms, $id));
+		[$request_status, $outcome_reason, $outcome, $status_code, $completed_time, $duration_ms, $id]);
 
-	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', array($id));
-	if (cacti_sizeof($event)) {
+	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
+
+	if (is_array($event)) {
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
-			array(audit_event_integrity_hash($event), $id));
+			[audit_event_integrity_hash($event), $id]);
 	}
 
 	audit_deliver_external_event($id);
 	audit_enqueue_syslog_event($id);
 }
 
-function audit_record_event($event_type, $options = array()) {
+/**
+ * @param array<string,mixed> $options
+ */
+function audit_record_event(string $event_type, array $options = []): int {
 	if (read_config_option('audit_enabled') != 'on') {
 		return 0;
 	}
@@ -615,7 +676,7 @@ function audit_record_event($event_type, $options = array()) {
 	$event_suffix   = strrchr($event_type, '.');
 	$action         = $options['action'] ?? ($event_suffix === false ? $event_type : substr($event_suffix, 1));
 	$event_time     = $options['event_time'] ?? audit_utc_time();
-	$details        = audit_json_encode(audit_redact_sensitive_data($options['details'] ?? array()));
+	$details        = audit_json_encode(audit_redact_sensitive_data($options['details'] ?? []));
 	$external       = read_config_option('audit_log_external') == 'on';
 	$ip_address     = $options['ip_address'] ?? (function_exists('get_client_addr') ? get_client_addr() : '');
 	$user_agent     = $options['user_agent'] ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
@@ -627,7 +688,7 @@ function audit_record_event($event_type, $options = array()) {
 			operation_outcome, outcome_reason, http_method, http_status,
 			completed_time, duration_ms, details
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		array(
+		[
 			$page, $user_id, $action, 'completed', $ip_address, $user_agent, $event_time,
 			'{}', '[]', $external ? 'pending' : 'disabled', $event_uuid, $correlation_id,
 			$event_type, $options['event_category'] ?? 'security',
@@ -637,13 +698,14 @@ function audit_record_event($event_type, $options = array()) {
 			$options['http_method'] ?? ($_SERVER['REQUEST_METHOD'] ?? null),
 			$options['http_status'] ?? null, $options['completed_time'] ?? $event_time,
 			$options['duration_ms'] ?? 0, $details
-		));
+		]);
 
 	$id    = db_fetch_insert_id();
-	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', array($id));
-	if (cacti_sizeof($event)) {
+	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
+
+	if (is_array($event)) {
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
-			array(audit_event_integrity_hash($event), $id));
+			[audit_event_integrity_hash($event), $id]);
 	}
 	audit_deliver_external_event($id);
 	audit_enqueue_syslog_event($id);
@@ -651,19 +713,19 @@ function audit_record_event($event_type, $options = array()) {
 	return $id;
 }
 
-function audit_logout_pre_session_destroy() {
+function audit_logout_pre_session_destroy(): void {
 	$reason = get_nfilter_request_var('action', 'user');
 	$type   = $reason == 'timeout' ? 'authentication.session.expired' : 'authentication.logout';
 
-	audit_record_event($type, array(
+	audit_record_event($type, [
 		'event_category' => 'authentication',
-		'action' => $reason == 'timeout' ? 'timeout' : 'logout',
-		'details' => array('reason' => $reason)
-	));
+		'action'         => $reason == 'timeout' ? 'timeout' : 'logout',
+		'details'        => ['reason' => $reason]
+	]);
 }
 
-function audit_enforce_syslog_settings_request() {
-	$page = basename($_SERVER['SCRIPT_NAME'] ?? '');
+function audit_enforce_syslog_settings_request(): void {
+	$page   = basename($_SERVER['SCRIPT_NAME'] ?? '');
 	$method = $_SERVER['REQUEST_METHOD'] ?? '';
 
 	if ($page !== 'settings.php' || $method !== 'POST') {
@@ -671,15 +733,18 @@ function audit_enforce_syslog_settings_request() {
 	}
 
 	$post = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW);
-	$post = is_array($post) ? $post : array();
+	$post = is_array($post) ? $post : [];
+
 	if (($post['action'] ?? '') !== 'save' || ($post['tab'] ?? '') !== 'audit') {
 		return;
 	}
 
 	$has_syslog_fields = false;
+
 	foreach ($post as $name => $value) {
 		if (strpos((string) $name, 'audit_syslog_') === 0) {
 			$has_syslog_fields = true;
+
 			break;
 		}
 	}
@@ -689,48 +754,48 @@ function audit_enforce_syslog_settings_request() {
 	}
 
 	if (!audit_user_is_admin()) {
-		audit_record_event('audit.syslog.configuration.denied', array(
-			'event_category' => 'audit',
-			'severity' => 'warning',
-			'action' => 'save',
-			'target_type' => 'syslog_configuration',
+		audit_record_event('audit.syslog.configuration.denied', [
+			'event_category'    => 'audit',
+			'severity'          => 'warning',
+			'action'            => 'save',
+			'target_type'       => 'syslog_configuration',
 			'operation_outcome' => 'failure',
-			'outcome_reason' => 'audit_admin_required'
-		));
+			'outcome_reason'    => 'audit_admin_required'
+		]);
 		http_response_code(403);
 		exit;
 	}
 
-	$names = array(
+	$names = [
 		'receiver', 'port', 'transport', 'format', 'facility', 'application',
 		'node_id', 'timeout', 'udp_max_size', 'retry_base', 'retry_max',
 		'max_attempts', 'batch_size', 'pending_age_warning',
 		'dead_letter_warning', 'tls_ca_file', 'tls_client_cert',
 		'tls_client_key'
-	);
-	$overrides = array();
+	];
+	$overrides = [];
 
 	foreach ($names as $name) {
-		$setting = 'audit_syslog_' . $name;
+		$setting          = 'audit_syslog_' . $name;
 		$overrides[$name] = isset($post[$setting]) && is_scalar($post[$setting])
 			? (string) $post[$setting]
 			: '';
 	}
 
-	$config = audit_syslog_config($overrides);
-	$enabling = isset($post['audit_syslog_enabled']) && $post['audit_syslog_enabled'] === 'on';
-	$configuring = trim($overrides['receiver']) !== '';
+	$config      = audit_syslog_config($overrides);
+	$enabling    = isset($post['audit_syslog_enabled']) && $post['audit_syslog_enabled'] === 'on';
+	$configuring = trim($overrides['receiver'] ?? '') !== '';
 
 	if (($enabling || $configuring) && !$config['valid']) {
-		audit_record_event('audit.syslog.configuration.rejected', array(
-			'event_category' => 'audit',
-			'severity' => 'warning',
-			'action' => 'save',
-			'target_type' => 'syslog_configuration',
+		audit_record_event('audit.syslog.configuration.rejected', [
+			'event_category'    => 'audit',
+			'severity'          => 'warning',
+			'action'            => 'save',
+			'target_type'       => 'syslog_configuration',
 			'operation_outcome' => 'failure',
-			'outcome_reason' => 'configuration_invalid',
-			'details' => array('errors' => $config['errors'])
-		));
+			'outcome_reason'    => 'configuration_invalid',
+			'details'           => ['errors' => $config['errors']]
+		]);
 
 		raise_message(
 			'audit_syslog_configuration',
@@ -742,38 +807,36 @@ function audit_enforce_syslog_settings_request() {
 	}
 }
 
-
-
-function audit_config_insert() {
+function audit_config_insert(): void {
 	global $action, $config;
 
 	audit_enforce_syslog_settings_request();
 
 	if (audit_log_valid_event()) {
 		$started_at = microtime(true);
-		/* prepare post */
+		// prepare post
 		$post = filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW);
-		$post = is_array($post) ? $post : array();
+		$post = is_array($post) ? $post : [];
 
-		/* remove unsafe variables */
+		// remove unsafe variables
 		unset($post['__csrf_magic']);
 		unset($post['header']);
 		$post = audit_redact_sensitive_data($post);
 
-		/* check if drp_action is present and update action accordingly */
+		// check if drp_action is present and update action accordingly
 		if (isset($post['drp_action']) && $post['drp_action'] == 1) {
 			$action = 'delete';
-		} else if (isset($post['drp_action']) && $post['drp_action'] == 4) {
+		} elseif (isset($post['drp_action']) && $post['drp_action'] == 4) {
 			$action = 'disable';
 		}
 
-		/* sanitize and serialize selected items */
+		// sanitize and serialize selected items
 		if (isset($post['selected_items']) && is_string($post['selected_items'])) {
-			$selected_items = @unserialize(stripslashes($post['selected_items']), array('allowed_classes' => false));
-			$selected_items = is_array($selected_items) ? $selected_items : array();
+			$selected_items = @unserialize(stripslashes($post['selected_items']), ['allowed_classes' => false]);
+			$selected_items = is_array($selected_items) ? $selected_items : [];
 			$drop_action    = $post['drp_action'] ?? false;
 		} else {
-			$selected_items = array();
+			$selected_items = [];
 			$drop_action    = false;
 		}
 
@@ -784,10 +847,10 @@ function audit_config_insert() {
 		$user_id     = (isset($_SESSION['sess_user_id']) ? $_SESSION['sess_user_id'] : 0);
 		$event_time  = audit_utc_time($started_at);
 
-		/* Retrieve IP address */
+		// Retrieve IP address
 		$ip_address  = get_client_addr();
 
-		/* Get the User Agent */
+		// Get the User Agent
 		$user_agent  = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
 		if (empty($action) && isset_request_var('action')) {
@@ -803,9 +866,11 @@ function audit_config_insert() {
 				switch ($drop_action) {
 					case 2:
 						$action = 'Delete Device';
+
 						break;
 					case 1:
 						$action = 'Create Device';
+
 						break;
 				}
 
@@ -814,16 +879,18 @@ function audit_config_insert() {
 				switch ($drop_action) {
 					case 2:
 						$action = 'Host Enabled';
+
 						break;
 					case 3:
 						$action = 'Host Disabled';
+
 						break;
 				}
 
 				break;
 		}
 
-		$audit_log = read_config_option('audit_log_external_path');
+		$audit_log        = read_config_option('audit_log_external_path');
 		$external_logging = read_config_option('audit_log_external') == 'on';
 		$external_status  = $external_logging ? 'pending' : 'disabled';
 
@@ -836,20 +903,20 @@ function audit_config_insert() {
 		$event_uuid     = audit_uuid_v4();
 		$correlation_id = audit_request_correlation_id();
 		$event_type     = audit_event_type_for_request($page, $action);
-		$category       = in_array($page, array('user_admin.php', 'user_group_admin.php'), true) ? 'identity_access' : 'configuration';
+		$category       = in_array($page, ['user_admin.php', 'user_group_admin.php'], true) ? 'identity_access' : 'configuration';
 		db_execute_prepared('INSERT INTO audit_log (
 				page, user_id, action, request_status, ip_address, user_agent, event_time,
 				post, object_data, external_status, event_uuid, correlation_id, event_type,
 				event_category, severity, actor_type, target_type, target_id,
 				operation_outcome, http_method
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			array(
+			[
 				$page, $user_id, $action, 'started', $ip_address, $user_agent, $event_time,
 				$post, $object_data, $external_status, $event_uuid, $correlation_id,
 				$event_type, $category, 'info', $user_id ? 'user' : 'system',
 				preg_replace('/\.php$/', '', $page), $target_id, 'unknown',
 				$_SERVER['REQUEST_METHOD'] ?? null
-			));
+			]);
 		$audit_id = db_fetch_insert_id();
 		register_shutdown_function('audit_finalize_request', $audit_id, $started_at, $verifier);
 
@@ -861,6 +928,7 @@ function audit_config_insert() {
 		if ($external_logging && $audit_log != '' && !file_exists($audit_log)) {
 			if (is_writable(dirname($audit_log))) {
 				cacti_log(sprintf('NOTE: The Audit Log file \'%s\' does not exist.  Creating it.', $audit_log), false, 'AUDIT');
+
 				if (!touch($audit_log)) {
 					cacti_log(sprintf('ERROR: Unable to create Audit Log file \'%s\'.', $audit_log), false, 'AUDIT');
 				} else {
@@ -882,18 +950,17 @@ function audit_config_insert() {
 		$page       = basename($arguments[0]);
 		$user_id    = 0;
 		$action     = 'cli';
-		$ip_address = getHostByName(php_uname('n'));
+		$ip_address = gethostbyname(php_uname('n'));
 		$user_agent = get_current_user();
 		$event_time = audit_utc_time($started_at);
 		$post       = implode(' ', $arguments);
 
-		/* don't insert poller records */
-		if (strpos($arguments[0], 'poller') === false &&
-			strpos($arguments[0], 'cmd.php') === false &&
-			strpos($arguments[0], '/scripts/') === false &&
+		// don't insert poller records
+		if (strpos($arguments[0], 'poller')         === false &&
+			strpos($arguments[0], 'cmd.php')           === false &&
+			strpos($arguments[0], '/scripts/')         === false &&
 			strpos($arguments[0], 'script_server.php') === false &&
-			strpos($arguments[0], '_process.php') === false) {
-
+			strpos($arguments[0], '_process.php')      === false) {
 			$external_status = read_config_option('audit_log_external') == 'on' ? 'pending' : 'disabled';
 			db_execute_prepared('INSERT INTO audit_log (
 					page, user_id, action, request_status, ip_address, user_agent, event_time,
@@ -901,12 +968,12 @@ function audit_config_insert() {
 					event_category, severity, actor_type, target_type, target_id,
 					operation_outcome
 				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				array(
+				[
 					$page, $user_id, $action, 'started', $ip_address, $user_agent,
 					$event_time, $post, '[]', $external_status, audit_uuid_v4(),
 					audit_request_correlation_id(), 'cacti.cli.executed', 'system',
 					'info', 'system', 'cli_command', $page, 'unknown'
-				));
+				]);
 			$audit_id = db_fetch_insert_id();
 			register_shutdown_function('audit_finalize_request', $audit_id, $started_at);
 		}

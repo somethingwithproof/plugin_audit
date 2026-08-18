@@ -83,8 +83,13 @@ function audit_syslog_valid_receiver(string $receiver): bool {
 }
 
 function audit_syslog_valid_header_value(string $value, int $maximum): bool {
-	return $value !== '' && strlen($value) <= $maximum &&
-		!preg_match('/[^\\x21-\\x7e]|[\\[\\]="]/', $value);
+	if ($value === '' || strlen($value) > $maximum) {
+		return false;
+	}
+
+	$invalid = preg_match('/[^\\x21-\\x7e]|[\\[\\]="]/', $value);
+
+	return $invalid === 0;
 }
 
 /**
@@ -421,7 +426,7 @@ function audit_syslog_cef_payload(array $event, array $config): string {
 		'cs2Label'   => 'Target',
 		'cs2'        => trim(($event['target_type'] ?? '') . ':' . ($event['target_id'] ?? ''), ':'),
 		'cs3Label'   => 'Node ID',
-		'cs3'        => $config['node_id'],
+		'cs3'        => audit_syslog_cef_event_field($config['node_id']),
 		'cn1Label'   => 'Poller ID',
 		'cn1'        => $config['poller_id'],
 		'cs4Label'   => 'Submitted Data',

@@ -460,7 +460,9 @@ function audit_external_log_format(array $data, string $format = 'json'): string
 function audit_csv_safe_cell($value): string {
 	$value = (string) $value;
 
-	if (preg_match('/^[=+\-@]/', ltrim($value))) {
+	$formula = preg_match('/^[=+\-@]/', ltrim($value));
+
+	if ($formula !== 0) {
 		return "'" . $value;
 	}
 

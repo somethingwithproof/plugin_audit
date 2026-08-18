@@ -71,4 +71,15 @@ describe('the advertised PHP 7.4 runtime contract', function () {
 
 		expect($info['info']['compat'] ?? null)->toBe('1.2.20');
 	});
+
+	it('keeps developer-only PHP excluded from the runtime lint sweep', function () {
+		$workflow = file_get_contents(__DIR__ . '/../../.github/workflows/code-quality.yml');
+		$config   = file_get_contents(__DIR__ . '/../../.phpstan.neon');
+
+		expect($workflow)->not->toBeFalse()
+			->and($workflow)->toContain("-path './phpstan' -prune")
+			->and($workflow)->toContain("-path './tests' -prune")
+			->and($config)->not->toBeFalse()
+			->and($config)->toContain('phpstan/stubs/cacti.stub');
+	});
 });

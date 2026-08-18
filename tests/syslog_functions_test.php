@@ -38,6 +38,17 @@ function audit_syslog_test_config($overrides = []) {
 	return audit_syslog_config(array_merge($values, $overrides));
 }
 
+$original_backtrack_limit = ini_get('pcre.backtrack_limit');
+ini_set('pcre.backtrack_limit', '0');
+$failed_header_config = audit_syslog_test_config([
+	'format'  => 'cef',
+	'node_id' => "node\x01identifier"
+]);
+$failed_header_payload = audit_syslog_cef_payload(audit_syslog_test_event(), $failed_header_config);
+ini_set('pcre.backtrack_limit', (string) $original_backtrack_limit);
+audit_syslog_test_assert(!$failed_header_config['valid'], 'Header matching failures must invalidate the Syslog configuration.');
+audit_syslog_test_assert(strpos($failed_header_payload, "\x01") === false, 'CEF payloads must not retain control bytes from a failed header validation.');
+
 function audit_syslog_test_event() {
 	return [
 		'id'                => 42,

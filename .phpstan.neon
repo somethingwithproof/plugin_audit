@@ -22,7 +22,7 @@ parameters:
             - '*.po'
             - '*.pot'
     scanFiles:
-        - phpstan/stubs/cacti.stubs.php
+        - phpstan/stubs/cacti.stub
     level: 8
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: false

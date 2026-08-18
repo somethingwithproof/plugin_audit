@@ -198,6 +198,12 @@ audit_test_assert_same(
 	'Credentials embedded in a URI must be redacted.'
 );
 
+$original_backtrack_limit = ini_get('pcre.backtrack_limit');
+ini_set('pcre.backtrack_limit', '0');
+$failed_redaction = audit_redact_cli_arguments(['https://user:must-not-leak@example.com/path']);
+ini_set('pcre.backtrack_limit', (string) $original_backtrack_limit);
+audit_test_assert_same('[REDACTED]', $failed_redaction[0], 'URI redaction failures must fail closed.');
+
 audit_test_assert_same("'=1+1", audit_csv_safe_cell('=1+1'), 'Spreadsheet formulas must be neutralized.');
 
 $deep   = [];
@@ -334,6 +340,11 @@ $audit_test_external_event = [];
 audit_deliver_external_event(999);
 audit_test_assert_same('', file_get_contents($temporary_log), 'Empty audit events must not create external records.');
 audit_test_assert_same([], $audit_test_external_updates, 'Empty audit events must not update delivery status.');
+
+$audit_test_external_event = ['id' => 999];
+audit_deliver_external_event(999);
+audit_test_assert_same('', file_get_contents($temporary_log), 'Events without a request status must not create external records.');
+audit_test_assert_same([], $audit_test_external_updates, 'Events without a request status must not update delivery status.');
 
 unlink($temporary_log);
 

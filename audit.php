@@ -353,6 +353,7 @@ function audit_export_rows(): void {
 	]);
 
 	if (cacti_sizeof($events)) {
+		/** @var array<int,array<string,mixed>> $events */
 		header('Content-Disposition: attachment; filename=audit_export.csv');
 		header('Content-Type: text/csv; charset=UTF-8');
 		header('X-Content-Type-Options: nosniff');
@@ -362,44 +363,42 @@ function audit_export_rows(): void {
 		if ($output !== false) {
 			fputcsv($output, ['event_uuid', 'correlation_id', 'event_type', 'event_category', 'severity', 'page', 'user_id', 'username', 'action', 'request_status', 'operation_outcome', 'outcome_reason', 'target_type', 'target_id', 'external_status', 'external_error', 'ip_address', 'user_agent', 'http_method', 'http_status', 'event_time', 'completed_time', 'duration_ms', 'integrity_hash', 'post', 'details'], ',', '"', '');
 
-			if (is_array($events)) {
-				foreach ($events as $event) {
-					if ($event['action'] == 'cli') {
-						$poster = $event['post'];
-					} else {
-						$post   = audit_json_decode($event['post'], $json_error);
-						$poster = is_array($post) ? json_encode($post, JSON_INVALID_UTF8_SUBSTITUTE) : $event['post'];
-					}
-
-					fputcsv($output, array_map('audit_csv_safe_cell', [
-						$event['event_uuid'],
-						$event['correlation_id'],
-						$event['event_type'],
-						$event['event_category'],
-						$event['severity'],
-						$event['page'],
-					$event['user_id'],
-					get_username($event['user_id']),
-					$event['action'],
-						$event['request_status'],
-						$event['operation_outcome'],
-						$event['outcome_reason'],
-						$event['target_type'],
-						$event['target_id'],
-						$event['external_status'],
-					$event['external_error'],
-					$event['ip_address'],
-						$event['user_agent'],
-						$event['http_method'],
-						$event['http_status'],
-						$event['event_time'],
-						$event['completed_time'],
-						$event['duration_ms'],
-						$event['integrity_hash'],
-						$poster,
-						$event['details']
-					]), ',', '"', '');
+			foreach ($events as $event) {
+				if ($event['action'] == 'cli') {
+					$poster = $event['post'];
+				} else {
+					$post   = audit_json_decode($event['post'], $json_error);
+					$poster = is_array($post) ? json_encode($post, JSON_INVALID_UTF8_SUBSTITUTE) : $event['post'];
 				}
+
+				fputcsv($output, array_map('audit_csv_safe_cell', [
+					$event['event_uuid'],
+					$event['correlation_id'],
+					$event['event_type'],
+					$event['event_category'],
+					$event['severity'],
+					$event['page'],
+				$event['user_id'],
+				get_username($event['user_id']),
+				$event['action'],
+					$event['request_status'],
+					$event['operation_outcome'],
+					$event['outcome_reason'],
+					$event['target_type'],
+					$event['target_id'],
+					$event['external_status'],
+				$event['external_error'],
+				$event['ip_address'],
+					$event['user_agent'],
+					$event['http_method'],
+					$event['http_status'],
+					$event['event_time'],
+					$event['completed_time'],
+					$event['duration_ms'],
+					$event['integrity_hash'],
+					$poster,
+					$event['details']
+				]), ',', '"', '');
 			}
 
 			fclose($output);
@@ -682,31 +681,31 @@ function audit_log(): void {
 	$i = 0;
 
 	if (cacti_sizeof($events)) {
-		if (is_array($events)) {
-			foreach ($events as $e) {
-				if ($e['action'] == 'cli') {
-					form_alternate_row('line' . $e['id'], false);
-					form_selectable_ecell($e['page'], $e['id']);
-					form_selectable_ecell($e['user_agent'], $e['id']);
-					form_selectable_cell('<span id="event' . (int) $e['id'] . '" class="linkEditMain">' . html_escape(ucfirst($e['action'])) . '</span>', $e['id']);
-					form_selectable_ecell($e['request_status'], $e['id']);
-					form_selectable_ecell($e['external_status'], $e['id']);
-					form_selectable_cell(__('N/A', 'audit'), $e['id']);
-					form_selectable_ecell($e['ip_address'], $e['id'], '', 'right');
-					form_selectable_ecell($e['event_time'], $e['id'], '', 'right');
-					form_end_row();
-				} else {
-					form_alternate_row('line' . $e['id'], false);
-					form_selectable_cell(filter_value($e['page'], get_request_var('filter')), $e['id']);
-					form_selectable_ecell($e['username'], $e['id']);
-					form_selectable_cell('<span id="event' . (int) $e['id'] . '" class="linkEditMain">' . html_escape(ucfirst($e['action'])) . '</span>', $e['id']);
-					form_selectable_ecell($e['request_status'], $e['id']);
-					form_selectable_ecell($e['external_status'], $e['id']);
-					form_selectable_ecell($e['user_agent'], $e['id']);
-					form_selectable_ecell($e['ip_address'], $e['id'], '', 'right');
-					form_selectable_ecell($e['event_time'], $e['id'], '', 'right');
-					form_end_row();
-				}
+		/** @var array<int,array<string,mixed>> $events */
+
+		foreach ($events as $e) {
+			if ($e['action'] == 'cli') {
+				form_alternate_row('line' . $e['id'], false);
+				form_selectable_ecell($e['page'], $e['id']);
+				form_selectable_ecell($e['user_agent'], $e['id']);
+				form_selectable_cell('<span id="event' . (int) $e['id'] . '" class="linkEditMain">' . html_escape(ucfirst($e['action'])) . '</span>', $e['id']);
+				form_selectable_ecell($e['request_status'], $e['id']);
+				form_selectable_ecell($e['external_status'], $e['id']);
+				form_selectable_cell(__('N/A', 'audit'), $e['id']);
+				form_selectable_ecell($e['ip_address'], $e['id'], '', 'right');
+				form_selectable_ecell($e['event_time'], $e['id'], '', 'right');
+				form_end_row();
+			} else {
+				form_alternate_row('line' . $e['id'], false);
+				form_selectable_cell(filter_value($e['page'], get_request_var('filter')), $e['id']);
+				form_selectable_ecell($e['username'], $e['id']);
+				form_selectable_cell('<span id="event' . (int) $e['id'] . '" class="linkEditMain">' . html_escape(ucfirst($e['action'])) . '</span>', $e['id']);
+				form_selectable_ecell($e['request_status'], $e['id']);
+				form_selectable_ecell($e['external_status'], $e['id']);
+				form_selectable_ecell($e['user_agent'], $e['id']);
+				form_selectable_ecell($e['ip_address'], $e['id'], '', 'right');
+				form_selectable_ecell($e['event_time'], $e['id'], '', 'right');
+				form_end_row();
 			}
 		}
 	} else {

@@ -254,7 +254,7 @@ function audit_redact_cli_arguments(array $arguments): array {
 			continue;
 		}
 
-		$redacted[] = preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $argument) ?? $argument;
+		$redacted[] = preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $argument) ?? '[REDACTED]';
 	}
 
 	return $redacted;
@@ -479,7 +479,7 @@ function audit_deliver_external_event(int $id): void {
 
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (!is_array($event) || $event === [] || ($event['request_status'] ?? '') === 'started') {
+	if (!is_array($event) || $event === [] || !isset($event['request_status']) || $event['request_status'] === 'started') {
 		return;
 	}
 

@@ -7,6 +7,17 @@ function audit_user_is_admin(): bool {
 }
 
 /**
+ * @param array<int,array<int,array<string,mixed>>> $objects
+ * @param array<int,array<string,mixed>>|false      $result
+ */
+function audit_append_page_objects(array &$objects, $result): void {
+	if (cacti_sizeof($result)) {
+		/** @var array<int,array<string,mixed>> $result */
+		$objects[] = $result;
+	}
+}
+
+/**
  * @param array<int,string> $selected_items
  * @param mixed             $drop_action
  */
@@ -18,27 +29,27 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 			case 'host.php':
 				// loop over array and perform query for each item
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT id AS host_id,site_id,description,hostname,status,status_fail_date AS last_failed_date,status_rec_date AS last_recovered_date
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT id AS host_id,site_id,description,hostname,status,status_fail_date AS last_failed_date,status_rec_date AS last_recovered_date
 							FROM host
 							WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'host_templates.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM host_template
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'templates_export.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name  FROM graph_templates
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name  FROM graph_templates
 							WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
@@ -63,72 +74,72 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 				break;
 			case 'graph_templates.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM graph_templates
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'thold.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT id,name_cache AS THOLD_NAME,data_source_name AS Data_Source
 						FROM thold_data
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'data_sources.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('select name_cache AS Data_Source_Name,active  from data_template_data
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('select name_cache AS Data_Source_Name,active  from data_template_data
 						WHERE local_data_id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'data_templates.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM data_template
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'aggregate_templates.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM aggregate_graph_template
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'thold_templates.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM thold_template
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'user_admin.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT username
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT username
 						FROM user_auth
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;
 			case 'user_group_admin.php':
 				foreach ($selected_items as $item) {
-					$objects[] = db_fetch_assoc_prepared('SELECT name
+					audit_append_page_objects($objects, db_fetch_assoc_prepared('SELECT name
 						FROM user_auth_group
 						WHERE id IN (?)',
-						[$item]);
+						[$item]));
 				}
 
 				break;

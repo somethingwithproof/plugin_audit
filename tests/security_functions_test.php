@@ -186,11 +186,19 @@ audit_test_assert_same(
 $audit_test_realm_query_failure = false;
 
 $audit_test_object_query_failure = true;
-audit_test_assert_same(
-	[],
-	json_decode(audit_process_page_data('automation_devices.php', '1', ['42']), true),
-	'Failed automation-device queries must not add false entries to object data.'
-);
+$object_pages                    = [
+	'host.php', 'host_templates.php', 'templates_export.php', 'automation_devices.php',
+	'graph_templates.php', 'thold.php', 'data_sources.php', 'data_templates.php',
+	'aggregate_templates.php', 'thold_templates.php', 'user_admin.php', 'user_group_admin.php'
+];
+
+foreach ($object_pages as $object_page) {
+	audit_test_assert_same(
+		[],
+		json_decode(audit_process_page_data($object_page, '1', ['42']), true),
+		'Failed object queries must not add false entries for ' . $object_page . '.'
+	);
+}
 $audit_test_object_query_failure = false;
 
 $request = [

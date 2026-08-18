@@ -19,6 +19,10 @@ function audit_syslog_enabled(): bool {
 	return read_config_option('audit_syslog_enabled') == 'on';
 }
 
+/**
+ * @param  mixed $default
+ * @return mixed
+ */
 function audit_syslog_read_setting(string $name, $default) {
 	$value = read_config_option($name);
 
@@ -269,6 +273,9 @@ function audit_syslog_facilities(): array {
 	];
 }
 
+/**
+ * @param mixed $severity
+ */
 function audit_syslog_severity_code($severity): int {
 	$map = [
 		'emergency' => 0, 'emerg' => 0, 'alert' => 1, 'critical' => 2,
@@ -280,6 +287,9 @@ function audit_syslog_severity_code($severity): int {
 	return isset($map[$severity]) ? $map[$severity] : 6;
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_header_token($value, int $maximum, string $fallback): string {
 	$value = preg_replace('/[^\\x21-\\x3c\\x3e-\\x5a\\x5e-\\x7e]/', '_', (string) $value);
 	$value = substr($value ?? '', 0, $maximum);
@@ -287,12 +297,18 @@ function audit_syslog_header_token($value, int $maximum, string $fallback): stri
 	return $value === '' ? $fallback : $value;
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_structured_value($value): string {
 	$value = preg_replace('/[\\x00-\\x1f\\x7f]/', ' ', (string) $value);
 
 	return str_replace(['\\', '"', ']'], ['\\\\', '\\"', '\\]'], $value ?? '');
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_timestamp($value): string {
 	$value = (string) $value;
 
@@ -316,10 +332,16 @@ function audit_syslog_normalized_data(array $event, array $config): array {
 	return $data;
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_cef_escape_header($value): string {
 	return str_replace(['\\', '|', "\r", "\n"], ['\\\\', '\\|', ' ', ' '], (string) $value);
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_cef_escape_extension($value): string {
 	return str_replace(
 		['\\', '=', "\r", "\n"],
@@ -328,6 +350,9 @@ function audit_syslog_cef_escape_extension($value): string {
 	);
 }
 
+/**
+ * @param mixed $severity
+ */
 function audit_syslog_cef_severity($severity): int {
 	$map = [
 		'emergency' => 10, 'emerg' => 10, 'alert' => 10,
@@ -340,6 +365,9 @@ function audit_syslog_cef_severity($severity): int {
 	return isset($map[$severity]) ? $map[$severity] : 3;
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_syslog_cef_event_field($value): string {
 	if (is_string($value) && $value !== '') {
 		$decoded = audit_json_decode($value, $error);
@@ -527,6 +555,9 @@ function audit_syslog_socket_target(array $config): string {
 	return $scheme . '://' . $receiver . ':' . $config['port'];
 }
 
+/**
+ * @return mixed
+ */
 function audit_syslog_stream_operation(callable $operation, string &$warning = '') {
 	$warning = '';
 	$handler = function ($severity, $message) use (&$warning) {
@@ -615,12 +646,19 @@ function audit_syslog_open_socket(array $config): array {
 	return ['socket' => $socket, 'error_code' => '', 'error' => ''];
 }
 
+/**
+ * @param mixed $error
+ */
 function audit_syslog_bounded_error($error): string {
 	$error = preg_replace('/[\\x00-\\x1f\\x7f]+/', ' ', (string) $error);
 
 	return substr(trim($error ?? ''), 0, 1024);
 }
 
+/**
+ * @param  mixed     $socket
+ * @return int|false
+ */
 function audit_syslog_fwrite($socket, string $message, string &$warning = '') {
 	return audit_syslog_stream_operation(function () use ($socket, $message) {
 		return fwrite($socket, $message);
@@ -721,7 +759,7 @@ function audit_enqueue_syslog_event(int $audit_id): void {
 		WHERE id = ?',
 		[$audit_id]);
 
-	if (!is_array($event) || $event['request_status'] === 'started' || $event['event_uuid'] === '') {
+	if (!is_array($event) || !cacti_sizeof($event) || $event['request_status'] === 'started' || $event['event_uuid'] === '') {
 		return;
 	}
 

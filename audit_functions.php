@@ -137,10 +137,18 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 	return audit_json_encode($objects);
 }
 
+/**
+ * @param  mixed     $key
+ * @return int|false
+ */
 function audit_is_sensitive_key($key) {
 	return preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
 }
 
+/**
+ * @param  mixed $data
+ * @return mixed
+ */
 function audit_redact_sensitive_data($data) {
 	if (!is_array($data)) {
 		return $data;
@@ -161,6 +169,10 @@ function audit_redact_sensitive_data($data) {
 	return $redacted;
 }
 
+/**
+ * @param  mixed $value
+ * @return mixed
+ */
 function audit_redact_sensitive_value($value) {
 	if (!is_string($value)) {
 		return $value;
@@ -175,6 +187,10 @@ function audit_redact_sensitive_value($value) {
 	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value);
 }
 
+/**
+ * @param  mixed $data
+ * @return mixed
+ */
 function audit_bound_log_data($data, int $depth = 0, ?object $state = null) {
 	if ($state === null) {
 		$state = (object) ['fields' => 0];
@@ -244,6 +260,9 @@ function audit_redact_cli_arguments(array $arguments): array {
 	return $redacted;
 }
 
+/**
+ * @param mixed $data
+ */
 function audit_json_encode($data, int $options = 0): string {
 	$json = json_encode(audit_bound_log_data($data), JSON_INVALID_UTF8_SUBSTITUTE | $options, 16);
 
@@ -256,6 +275,10 @@ function audit_json_encode($data, int $options = 0): string {
 	return $json;
 }
 
+/**
+ * @param  mixed $json
+ * @return mixed
+ */
 function audit_json_decode($json, ?string &$error = null) {
 	$error = null;
 
@@ -321,6 +344,10 @@ function audit_event_integrity_hash(array $event): string {
 	return hash('sha256', audit_json_encode($material, JSON_UNESCAPED_SLASHES));
 }
 
+/**
+ * @param mixed $page
+ * @param mixed $action
+ */
 function audit_event_type_for_request($page, $action): string {
 	$page_name = preg_replace('/\.php$/', '', (string) $page);
 	$page_name = preg_replace('/[^a-z0-9_]+/i', '_', $page_name ?? '');
@@ -393,6 +420,9 @@ function audit_external_log_format(array $data, string $format = 'json'): string
 	return audit_json_encode($data, JSON_UNESCAPED_SLASHES) . "\n";
 }
 
+/**
+ * @param mixed $value
+ */
 function audit_csv_safe_cell($value): string {
 	$value = (string) $value;
 
@@ -403,6 +433,9 @@ function audit_csv_safe_cell($value): string {
 	return $value;
 }
 
+/**
+ * @param mixed $retention
+ */
 function audit_retention_cutoff($retention, ?DateTimeImmutable $now = null): DateTimeImmutable {
 	$now = $now instanceof DateTimeImmutable
 		? $now->setTimezone(new DateTimeZone('UTC'))
@@ -654,7 +687,7 @@ function audit_finalize_request(int $id, ?float $started_at = null, ?array $veri
 
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (is_array($event)) {
+	if (is_array($event) && cacti_sizeof($event)) {
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
 			[audit_event_integrity_hash($event), $id]);
 	}
@@ -705,7 +738,7 @@ function audit_record_event(string $event_type, array $options = []): int {
 	$id    = db_fetch_insert_id();
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (is_array($event)) {
+	if (is_array($event) && cacti_sizeof($event)) {
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
 			[audit_event_integrity_hash($event), $id]);
 	}

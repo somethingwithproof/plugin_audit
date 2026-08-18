@@ -23,6 +23,11 @@ $audit_queue_settings = [
 ];
 $audit_queue_calls         = [];
 $audit_queue_affected_rows = 0;
+$audit_queue_event         = [
+	'id'             => 42,
+	'event_uuid'     => '32e0a97d-d9e8-4abc-8f41-2bbbc50793ca',
+	'request_status' => 'completed'
+];
 
 function read_config_option($name) {
 	global $audit_queue_settings;
@@ -35,11 +40,9 @@ function db_table_exists($table) {
 }
 
 function db_fetch_row_prepared($sql, $params = []) {
-	return [
-		'id'             => (int) $params[0],
-		'event_uuid'     => '32e0a97d-d9e8-4abc-8f41-2bbbc50793ca',
-		'request_status' => 'completed'
-	];
+	global $audit_queue_event;
+
+	return $audit_queue_event;
 }
 
 function db_execute_prepared($sql, $params = []) {
@@ -88,6 +91,12 @@ audit_queue_assert($audit_queue_calls[0]['params'][3] === 'queue-test-node',
 	'Queue insertion must snapshot the stable node identity.');
 audit_queue_assert($audit_queue_calls[0]['params'][5] === 'pending',
 	'A valid enabled destination must enqueue in pending state.');
+
+$audit_queue_calls = [];
+$audit_queue_event = [];
+audit_enqueue_syslog_event(404);
+audit_queue_assert($audit_queue_calls === [],
+	'A missing audit row must not enqueue a delivery with a null audit ID.');
 
 $config         = audit_syslog_config();
 $retry_identity = audit_syslog_delivery_config($config, [

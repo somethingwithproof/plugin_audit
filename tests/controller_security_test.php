@@ -90,6 +90,16 @@ if (substr_count($controller, 'csrf_check(false)') < 3) {
 	exit(1);
 }
 
+$missing_event_guard = strpos((string) $controller, 'if (!is_array($data) || !cacti_sizeof($data))');
+$missing_event_404   = strpos((string) $controller, 'http_response_code(404)', (int) $missing_event_guard);
+$view_event_write    = strpos((string) $controller, "audit_record_event('audit.event.viewed'");
+
+if ($missing_event_guard === false || $missing_event_404 === false || $view_event_write === false ||
+	$missing_event_guard > $missing_event_404 || $missing_event_404 > $view_event_write) {
+	fwrite(STDERR, 'Missing audit events must return before recording a view event.' . PHP_EOL);
+	exit(1);
+}
+
 if (strpos($functions, 'audit_enforce_syslog_settings_request()') === false ||
 	strpos($functions, "'audit.syslog.configuration.denied'")        === false) {
 	fwrite(STDERR, 'Remote Syslog settings must enforce Audit Log Admin on save.' . PHP_EOL);

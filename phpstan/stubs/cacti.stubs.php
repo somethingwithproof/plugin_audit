@@ -242,6 +242,7 @@ function sanitize_search_string(mixed $string): string {
 }
 
 function html_escape_request_var(string $name): string {
+	return '';
 }
 
 // ----- Logging / Misc ------------------------------------------------

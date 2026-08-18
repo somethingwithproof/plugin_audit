@@ -245,13 +245,31 @@ function audit_redact_cli_arguments(array $arguments): array {
 			continue;
 		}
 
-		if (preg_match('/^(--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)[^=]*)=(.*)$/i', $argument, $matches)) {
+		$inline_match = preg_match('/^(--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)[^=]*)=(.*)$/i', $argument, $matches);
+
+		if ($inline_match === false) {
+			$redacted[]  = '[REDACTED]';
+			$redact_next = strpos($argument, '=') === false;
+
+			continue;
+		}
+
+		if ($inline_match === 1) {
 			$redacted[] = $matches[1] . '=[REDACTED]';
 
 			continue;
 		}
 
-		if (preg_match('/^--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', $argument)) {
+		$key_match = preg_match('/^--?[^=]*(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', $argument);
+
+		if ($key_match === false) {
+			$redacted[]  = '[REDACTED]';
+			$redact_next = true;
+
+			continue;
+		}
+
+		if ($key_match === 1) {
 			$redacted[]  = $argument;
 			$redact_next = true;
 

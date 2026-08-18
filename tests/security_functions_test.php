@@ -45,13 +45,23 @@ function db_fetch_assoc_prepared($sql, $params = []) {
 	}, $realm_ids);
 }
 
-function db_fetch_row_prepared(string $sql, array $params = []): array|false {
+/**
+ * @param  string             $sql
+ * @param  array<mixed>       $params
+ * @return array<mixed>|false
+ */
+function db_fetch_row_prepared($sql, $params = []) {
 	global $audit_test_external_event;
 
 	return $audit_test_external_event;
 }
 
-function db_execute_prepared(string $sql, array $params = []): bool {
+/**
+ * @param  string       $sql
+ * @param  array<mixed> $params
+ * @return bool
+ */
+function db_execute_prepared($sql, $params = []) {
 	global $audit_test_external_updates;
 
 	$audit_test_external_updates[] = ['sql' => $sql, 'params' => $params];
@@ -59,7 +69,11 @@ function db_execute_prepared(string $sql, array $params = []): bool {
 	return true;
 }
 
-function read_config_option(string $name): mixed {
+/**
+ * @param  string $name
+ * @return mixed
+ */
+function read_config_option($name) {
 	global $audit_test_config_options;
 
 	return $audit_test_config_options[$name] ?? '';
@@ -201,6 +215,8 @@ audit_test_assert_same(
 $original_backtrack_limit = ini_get('pcre.backtrack_limit');
 ini_set('pcre.backtrack_limit', '0');
 $failed_redaction      = audit_redact_cli_arguments(['https://user:must-not-leak@example.com/path']);
+$failed_inline_cli     = audit_redact_cli_arguments(['--password=must-not-leak']);
+$failed_separated_cli  = audit_redact_cli_arguments(['--api-token', 'must-not-leak']);
 $failed_post_redaction = audit_redact_sensitive_data([
 	'password' => 'must-not-leak',
 	'nested'   => ['api_token' => 'must-not-leak'],
@@ -208,6 +224,9 @@ $failed_post_redaction = audit_redact_sensitive_data([
 $failed_value_redaction = audit_redact_sensitive_value('https://user:must-not-leak@example.com/path');
 ini_set('pcre.backtrack_limit', (string) $original_backtrack_limit);
 audit_test_assert_same('[REDACTED]', $failed_redaction[0], 'URI redaction failures must fail closed.');
+audit_test_assert_same('[REDACTED]', $failed_inline_cli[0], 'Inline CLI key-matching failures must fail closed.');
+audit_test_assert_same('[REDACTED]', $failed_separated_cli[0], 'Separated CLI key-matching failures must redact the option.');
+audit_test_assert_same('[REDACTED]', $failed_separated_cli[1], 'Separated CLI key-matching failures must redact the value.');
 audit_test_assert_same('[REDACTED]', $failed_post_redaction['password'], 'Sensitive key matching failures must fail closed.');
 audit_test_assert_same('[REDACTED]', $failed_post_redaction['nested']['api_token'], 'Nested sensitive key matching failures must fail closed.');
 audit_test_assert_same('[REDACTED]', $failed_value_redaction, 'Sensitive value matching failures must fail closed.');

@@ -8,6 +8,7 @@ function audit_user_is_admin(): bool {
 
 /**
  * @param array<int,string> $selected_items
+ * @param mixed             $drop_action
  */
 function audit_process_page_data(string $page, $drop_action, array $selected_items): string {
 	$objects = [];
@@ -136,11 +137,11 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 	return audit_json_encode($objects);
 }
 
-function audit_is_sensitive_key($key)  {
+function audit_is_sensitive_key($key) {
 	return preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
 }
 
-function audit_redact_sensitive_data($data)  {
+function audit_redact_sensitive_data($data) {
 	if (!is_array($data)) {
 		return $data;
 	}
@@ -160,7 +161,7 @@ function audit_redact_sensitive_data($data)  {
 	return $redacted;
 }
 
-function audit_redact_sensitive_value($value)  {
+function audit_redact_sensitive_value($value) {
 	if (!is_string($value)) {
 		return $value;
 	}
@@ -174,7 +175,7 @@ function audit_redact_sensitive_value($value)  {
 	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value);
 }
 
-function audit_bound_log_data($data, int $depth = 0, ?object $state = null)  {
+function audit_bound_log_data($data, int $depth = 0, ?object $state = null) {
 	if ($state === null) {
 		$state = (object) ['fields' => 0];
 	}
@@ -255,7 +256,7 @@ function audit_json_encode($data, int $options = 0): string {
 	return $json;
 }
 
-function audit_json_decode($json, ?string &$error = null)  {
+function audit_json_decode($json, ?string &$error = null) {
 	$error = null;
 
 	try {
@@ -561,6 +562,7 @@ function audit_operation_verifier_for_request(string $page, array $post): ?array
 
 /**
  * @return array<string,mixed>
+ * @param  mixed               $verifier
  */
 function audit_verify_operation($verifier): array {
 	if (!is_array($verifier) || empty($verifier['type'])) {

@@ -19,7 +19,7 @@ function audit_syslog_enabled(): bool {
 	return read_config_option('audit_syslog_enabled') == 'on';
 }
 
-function audit_syslog_read_setting(string $name, $default)  {
+function audit_syslog_read_setting(string $name, $default) {
 	$value = read_config_option($name);
 
 	return $value === '' || $value === null ? $default : $value;
@@ -27,6 +27,7 @@ function audit_syslog_read_setting(string $name, $default)  {
 
 /**
  * @param array<int,string> $errors
+ * @param mixed             $value
  */
 function audit_syslog_bounded_integer($value, int $default, int $minimum, int $maximum, array &$errors, string $name): int {
 	if (!is_scalar($value) || !preg_match('/^[0-9]+$/', (string) $value)) {
@@ -526,7 +527,7 @@ function audit_syslog_socket_target(array $config): string {
 	return $scheme . '://' . $receiver . ':' . $config['port'];
 }
 
-function audit_syslog_stream_operation(callable $operation, string &$warning = '')  {
+function audit_syslog_stream_operation(callable $operation, string &$warning = '') {
 	$warning = '';
 	$handler = function ($severity, $message) use (&$warning) {
 		$warning = audit_syslog_bounded_error($message);
@@ -620,7 +621,7 @@ function audit_syslog_bounded_error($error): string {
 	return substr(trim($error ?? ''), 0, 1024);
 }
 
-function audit_syslog_fwrite($socket, string $message, string &$warning = '')  {
+function audit_syslog_fwrite($socket, string $message, string &$warning = '') {
 	return audit_syslog_stream_operation(function () use ($socket, $message) {
 		return fwrite($socket, $message);
 	}, $warning);
@@ -628,6 +629,7 @@ function audit_syslog_fwrite($socket, string $message, string &$warning = '')  {
 
 /**
  * @return array<string,mixed>
+ * @param  mixed               $socket
  */
 function audit_syslog_write($socket, string $message, string $transport): array {
 	if (!is_resource($socket)) {
@@ -672,6 +674,7 @@ function audit_syslog_write($socket, string $message, string $transport): array 
 /**
  * @param  array<string,mixed> $event
  * @param  array<string,mixed> $config
+ * @param  null|mixed          $socket
  * @return array<string,mixed>
  */
 function audit_syslog_send_event(array $event, array $config, &$socket = null): array {
@@ -757,6 +760,7 @@ function audit_syslog_delivery_config(array $config, array $delivery): array {
 
 /**
  * @param array<string,mixed> $config
+ * @param mixed               $attempt
  */
 function audit_syslog_retry_delay($attempt, array $config): int {
 	$exponent = min(max(0, (int) $attempt - 1), 30);

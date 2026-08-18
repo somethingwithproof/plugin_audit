@@ -128,12 +128,13 @@ switch(get_request_var('action')) {
 			WHERE id = ?',
 			[get_filter_request_var('id')]);
 
-		if (!is_array($data) || !cacti_sizeof($data)) {
+		if (!cacti_sizeof($data)) {
 			http_response_code(404);
 			print html_escape(__('Audit event not found.', 'audit'));
 
 			break;
 		}
+		/** @var array<string,mixed> $data */
 
 		audit_record_event('audit.event.viewed', [
 			'event_category' => 'audit',
@@ -185,7 +186,8 @@ function audit_render_event_details(array $data): string {
 			LIMIT 1',
 			[$data['id']]);
 
-		if (is_array($syslog) && cacti_sizeof($syslog)) {
+		if (cacti_sizeof($syslog)) {
+			/** @var array<string,mixed> $syslog */
 			$output .= '<br><span><b>' . __('Remote Syslog Delivery:', 'audit') . '</b>  <i>' . html_escape($syslog['state']) . '</i></span>';
 			$output .= '<br><span><b>' . __('Syslog Attempts:', 'audit') . '</b>  <i>' . (int) $syslog['attempts'] . '</i></span>';
 

@@ -90,7 +90,7 @@ if (substr_count($controller, 'csrf_check(false)') < 3) {
 	exit(1);
 }
 
-$missing_event_guard = strpos((string) $controller, 'if (!is_array($data) || !cacti_sizeof($data))');
+$missing_event_guard = strpos((string) $controller, 'if (!cacti_sizeof($data))');
 $missing_event_404   = strpos((string) $controller, 'http_response_code(404)', (int) $missing_event_guard);
 $view_event_write    = strpos((string) $controller, "audit_record_event('audit.event.viewed'");
 

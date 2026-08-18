@@ -687,7 +687,8 @@ function audit_finalize_request(int $id, ?float $started_at = null, ?array $veri
 
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (is_array($event) && cacti_sizeof($event)) {
+	if (cacti_sizeof($event)) {
+		/** @var array<string,mixed> $event */
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
 			[audit_event_integrity_hash($event), $id]);
 	}
@@ -738,7 +739,8 @@ function audit_record_event(string $event_type, array $options = []): int {
 	$id    = db_fetch_insert_id();
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (is_array($event) && cacti_sizeof($event)) {
+	if (cacti_sizeof($event)) {
+		/** @var array<string,mixed> $event */
 		db_execute_prepared('UPDATE audit_log SET integrity_hash = ? WHERE id = ?',
 			[audit_event_integrity_hash($event), $id]);
 	}

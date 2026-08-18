@@ -759,7 +759,12 @@ function audit_enqueue_syslog_event(int $audit_id): void {
 		WHERE id = ?',
 		[$audit_id]);
 
-	if (!is_array($event) || !cacti_sizeof($event) || $event['request_status'] === 'started' || $event['event_uuid'] === '') {
+	if (!cacti_sizeof($event)) {
+		return;
+	}
+	/** @var array<string,mixed> $event */
+
+	if ($event['request_status'] === 'started' || $event['event_uuid'] === '') {
 		return;
 	}
 

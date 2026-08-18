@@ -200,9 +200,18 @@ audit_test_assert_same(
 
 $original_backtrack_limit = ini_get('pcre.backtrack_limit');
 ini_set('pcre.backtrack_limit', '0');
-$failed_redaction = audit_redact_cli_arguments(['https://user:must-not-leak@example.com/path']);
+$failed_redaction      = audit_redact_cli_arguments(['https://user:must-not-leak@example.com/path']);
+$failed_post_redaction = audit_redact_sensitive_data([
+	'password' => 'must-not-leak',
+	'nested'   => ['api_token' => 'must-not-leak'],
+]);
+$failed_value_redaction = audit_redact_sensitive_value('https://user:must-not-leak@example.com/path');
 ini_set('pcre.backtrack_limit', (string) $original_backtrack_limit);
 audit_test_assert_same('[REDACTED]', $failed_redaction[0], 'URI redaction failures must fail closed.');
+audit_test_assert_same('[REDACTED]', $failed_post_redaction['password'], 'Sensitive key matching failures must fail closed.');
+audit_test_assert_same('[REDACTED]', $failed_post_redaction['nested']['api_token'], 'Nested sensitive key matching failures must fail closed.');
+audit_test_assert_same('[REDACTED]', $failed_value_redaction, 'Sensitive value matching failures must fail closed.');
+audit_test_assert_same('[REDACTED]', audit_syslog_cef_event_field($failed_value_redaction), 'Failed redaction must remain safe through CEF formatting.');
 
 audit_test_assert_same("'=1+1", audit_csv_safe_cell('=1+1'), 'Spreadsheet formulas must be neutralized.');
 

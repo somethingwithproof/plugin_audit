@@ -271,14 +271,14 @@ function audit_render_value($value): string {
 }
 
 function audit_purge(): void {
-	$protected = db_fetch_cell("SELECT COUNT(*)
+	$protected = db_fetch_cell_prepared("SELECT COUNT(*)
 		FROM audit_log
 		WHERE EXISTS (
 			SELECT 1
 			FROM audit_syslog_delivery
 			WHERE audit_syslog_delivery.audit_id = audit_log.id
 			AND audit_syslog_delivery.state IN ('pending', 'retry', 'dead_letter')
-		)");
+		)", []);
 
 	db_execute("DELETE FROM audit_log
 		WHERE NOT EXISTS (

@@ -138,11 +138,13 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 }
 
 /**
- * @param  mixed     $key
- * @return int|false
+ * @param  mixed $key
+ * @return int
  */
 function audit_is_sensitive_key($key) {
-	return preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
+	$matched = preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
+
+	return $matched === false ? 1 : $matched;
 }
 
 /**
@@ -178,13 +180,15 @@ function audit_redact_sensitive_value($value) {
 		return $value;
 	}
 
-	if (preg_match('/-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----/', $value) ||
-		preg_match('/^(?:Bearer|Basic)\s+[A-Za-z0-9+\/_=.-]+$/i', trim($value)) ||
-		preg_match('/^[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}$/', trim($value))) {
+	$private_key   = preg_match('/-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----/', $value);
+	$authorization = preg_match('/^(?:Bearer|Basic)\s+[A-Za-z0-9+\/_=.-]+$/i', trim($value));
+	$token         = preg_match('/^[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}$/', trim($value));
+
+	if ($private_key !== 0 || $authorization !== 0 || $token !== 0) {
 		return '[REDACTED]';
 	}
 
-	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value);
+	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value) ?? '[REDACTED]';
 }
 
 /**

@@ -368,7 +368,7 @@ function audit_setup_syslog_table(): void {
 		AFTER node_id');
 }
 
-function audit_upgrade_event_schema(mixed $rcnn_id = false): void {
+function audit_upgrade_event_schema($rcnn_id = false): void {
 	$remote  = $rcnn_id !== false;
 	$args    = $remote ? [true, $rcnn_id] : [];
 	$columns = [

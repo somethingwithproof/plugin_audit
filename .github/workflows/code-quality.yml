@@ -32,6 +32,25 @@ on:
       - develop
 
 jobs:
+  php74-runtime-syntax:
+    name: PHP 7.4 advertised runtime syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout audit Plugin
+        uses: actions/checkout@v4
+
+      - name: Install PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+
+      - name: Lint runtime PHP
+        run: |
+          find . -path './.git' -prune -o -path './phpstan' -prune -o -path './tests' -prune \
+            -o -name '*.php' -print0 | xargs -0 -n1 php -l
+
   code-quality:
     runs-on: ubuntu-latest
 

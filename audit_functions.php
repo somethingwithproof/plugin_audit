@@ -9,7 +9,7 @@ function audit_user_is_admin(): bool {
 /**
  * @param array<int,string> $selected_items
  */
-function audit_process_page_data(string $page, mixed $drop_action, array $selected_items): string {
+function audit_process_page_data(string $page, $drop_action, array $selected_items): string {
 	$objects = [];
 
 	if ($drop_action !== false) {
@@ -136,11 +136,11 @@ function audit_process_page_data(string $page, mixed $drop_action, array $select
 	return audit_json_encode($objects);
 }
 
-function audit_is_sensitive_key(mixed $key): int|false {
+function audit_is_sensitive_key($key)  {
 	return preg_match('/(?:pass(?:word)?|phrase|token|secret|api[_-]?key|private[_-]?key|community|credential|authorization|authentication)/i', (string) $key);
 }
 
-function audit_redact_sensitive_data(mixed $data): mixed {
+function audit_redact_sensitive_data($data)  {
 	if (!is_array($data)) {
 		return $data;
 	}
@@ -160,7 +160,7 @@ function audit_redact_sensitive_data(mixed $data): mixed {
 	return $redacted;
 }
 
-function audit_redact_sensitive_value(mixed $value): mixed {
+function audit_redact_sensitive_value($value)  {
 	if (!is_string($value)) {
 		return $value;
 	}
@@ -174,7 +174,7 @@ function audit_redact_sensitive_value(mixed $value): mixed {
 	return preg_replace('#^([a-z][a-z0-9+.-]*://[^:/@\s]+):[^@\s]+@#i', '$1:[REDACTED]@', $value);
 }
 
-function audit_bound_log_data(mixed $data, int $depth = 0, ?object $state = null): mixed {
+function audit_bound_log_data($data, int $depth = 0, ?object $state = null)  {
 	if ($state === null) {
 		$state = (object) ['fields' => 0];
 	}
@@ -243,7 +243,7 @@ function audit_redact_cli_arguments(array $arguments): array {
 	return $redacted;
 }
 
-function audit_json_encode(mixed $data, int $options = 0): string {
+function audit_json_encode($data, int $options = 0): string {
 	$json = json_encode(audit_bound_log_data($data), JSON_INVALID_UTF8_SUBSTITUTE | $options, 16);
 
 	if ($json === false) {
@@ -255,7 +255,7 @@ function audit_json_encode(mixed $data, int $options = 0): string {
 	return $json;
 }
 
-function audit_json_decode(mixed $json, ?string &$error = null): mixed {
+function audit_json_decode($json, ?string &$error = null)  {
 	$error = null;
 
 	try {
@@ -320,7 +320,7 @@ function audit_event_integrity_hash(array $event): string {
 	return hash('sha256', audit_json_encode($material, JSON_UNESCAPED_SLASHES));
 }
 
-function audit_event_type_for_request(mixed $page, mixed $action): string {
+function audit_event_type_for_request($page, $action): string {
 	$page_name = preg_replace('/\.php$/', '', (string) $page);
 	$page_name = preg_replace('/[^a-z0-9_]+/i', '_', $page_name ?? '');
 	$verb      = preg_replace('/[^a-z0-9_]+/i', '_', strtolower((string) $action));
@@ -392,7 +392,7 @@ function audit_external_log_format(array $data, string $format = 'json'): string
 	return audit_json_encode($data, JSON_UNESCAPED_SLASHES) . "\n";
 }
 
-function audit_csv_safe_cell(mixed $value): string {
+function audit_csv_safe_cell($value): string {
 	$value = (string) $value;
 
 	if (preg_match('/^[=+\-@]/', ltrim($value))) {
@@ -402,7 +402,7 @@ function audit_csv_safe_cell(mixed $value): string {
 	return $value;
 }
 
-function audit_retention_cutoff(mixed $retention, ?DateTimeImmutable $now = null): DateTimeImmutable {
+function audit_retention_cutoff($retention, ?DateTimeImmutable $now = null): DateTimeImmutable {
 	$now = $now instanceof DateTimeImmutable
 		? $now->setTimezone(new DateTimeZone('UTC'))
 		: new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -562,7 +562,7 @@ function audit_operation_verifier_for_request(string $page, array $post): ?array
 /**
  * @return array<string,mixed>
  */
-function audit_verify_operation(mixed $verifier): array {
+function audit_verify_operation($verifier): array {
 	if (!is_array($verifier) || empty($verifier['type'])) {
 		return ['outcome' => 'unknown', 'reason' => null];
 	}

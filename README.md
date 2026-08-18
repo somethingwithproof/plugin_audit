@@ -1,5 +1,10 @@
 # audit
 
+The plugin supports Cacti 1.2.20 and later and keeps its runtime files compatible
+with PHP 7.4. Development analysis and the full security suite run on current PHP
+versions; CI separately parses every production PHP file with PHP 7.4 so the
+advertised installation floor cannot drift unnoticed.
+
 This plugin is to be used to track transactions in the Cacti database, when they
 were made, by what IP address and by what login account.  This can be used to
 determine the root cause of issues created by users of the Cacti system.

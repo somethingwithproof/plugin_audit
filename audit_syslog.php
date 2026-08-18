@@ -883,7 +883,8 @@ function audit_process_syslog_queue(): void {
 		[]);
 	$socket = null;
 
-	if (is_array($deliveries)) {
+	if (cacti_sizeof($deliveries)) {
+		/** @var array<int,array<string,mixed>> $deliveries */
 		foreach ($deliveries as $delivery) {
 			$delivery_config = audit_syslog_delivery_config($config, $delivery);
 			$result          = audit_syslog_send_event($delivery, $delivery_config, $socket);

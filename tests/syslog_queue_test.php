@@ -17,6 +17,7 @@ $audit_queue_settings = [
 	'audit_syslog_batch_size'          => '10',
 	'audit_syslog_pending_age_warning' => '900',
 	'audit_syslog_dead_letter_warning' => '1',
+	'audit_syslog_health_state'        => 'healthy',
 	'audit_syslog_tls_ca_file'         => '',
 	'audit_syslog_tls_client_cert'     => '',
 	'audit_syslog_tls_client_key'      => ''
@@ -28,6 +29,7 @@ $audit_queue_event         = [
 	'event_uuid'     => '32e0a97d-d9e8-4abc-8f41-2bbbc50793ca',
 	'request_status' => 'completed'
 ];
+$audit_queue_deliveries    = false;
 
 function read_config_option($name) {
 	global $audit_queue_settings;
@@ -43,6 +45,33 @@ function db_fetch_row_prepared($sql, $params = []) {
 	global $audit_queue_event;
 
 	return $audit_queue_event;
+}
+
+/**
+ * @param  string             $sql
+ * @param  array<mixed>       $params
+ * @return array<mixed>|false
+ */
+function db_fetch_assoc_prepared($sql, $params = []) {
+	global $audit_queue_deliveries;
+
+	return $audit_queue_deliveries;
+}
+
+/**
+ * @param  string       $sql
+ * @return array<mixed>
+ */
+function db_fetch_row($sql) {
+	return [];
+}
+
+/**
+ * @param  string $sql
+ * @return string
+ */
+function db_fetch_cell($sql) {
+	return '';
 }
 
 function db_execute_prepared($sql, $params = []) {
@@ -65,6 +94,24 @@ function db_affected_rows() {
 	global $audit_queue_affected_rows;
 
 	return $audit_queue_affected_rows;
+}
+
+/**
+ * @param  mixed $message
+ * @param  mixed $also_print
+ * @param  mixed $log_type
+ * @param  mixed $level
+ * @return void
+ */
+function cacti_log($message, $also_print = false, $log_type = '', $level = 0) {
+}
+
+/**
+ * @param  mixed $name
+ * @param  mixed $value
+ * @return void
+ */
+function set_config_option($name, $value) {
 }
 
 function cacti_sizeof($value) {
@@ -126,6 +173,11 @@ audit_queue_assert($audit_queue_calls[0]['params'][3] === 5 && $audit_queue_call
 	'A transient failure must schedule the bounded exponential delay.');
 audit_queue_assert(strpos($audit_queue_calls[0]['params'][5], "\n") === false,
 	'Stored delivery errors must be bounded to one safe line.');
+
+$calls_before_failed_fetch = $audit_queue_calls;
+audit_process_syslog_queue();
+audit_queue_assert($audit_queue_calls === $calls_before_failed_fetch,
+	'A failed Syslog queue fetch must not attempt a delivery update.');
 
 $audit_queue_calls    = [];
 $delivery['attempts'] = 4;

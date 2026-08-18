@@ -49,7 +49,8 @@ function audit_process_page_data(string $page, $drop_action, array $selected_ite
 							WHERE id IN (?)',
 						[$item]);
 
-					if (is_array($result)) {
+					if (cacti_sizeof($result)) {
+						/** @var array<int,array<string,mixed>> $result */
 						foreach ($result as &$row) {
 							$row['snmp'] = ($row['snmp'] == 1) ? 'UP' : 'Down';
 							$row['up']   = ($row['up'] == 1) ? 'Yes' : 'No';
@@ -501,7 +502,7 @@ function audit_deliver_external_event(int $id): void {
 
 	$event = db_fetch_row_prepared('SELECT * FROM audit_log WHERE id = ?', [$id]);
 
-	if (!is_array($event) || $event === [] || !isset($event['request_status']) || $event['request_status'] === 'started') {
+	if (!cacti_sizeof($event) || !isset($event['request_status']) || $event['request_status'] === 'started') {
 		return;
 	}
 
@@ -540,7 +541,8 @@ function audit_retry_external_logs(): void {
 		ORDER BY id
 		LIMIT 100");
 
-	if (is_array($events)) {
+	if (cacti_sizeof($events)) {
+		/** @var array<int,array<string,mixed>> $events */
 		foreach ($events as $event) {
 			$message  = audit_external_log_format(audit_external_event_data($event), $format);
 			$delivery = audit_append_external_log($path, $message);

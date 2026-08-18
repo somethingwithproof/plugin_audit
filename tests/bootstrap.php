@@ -12,7 +12,9 @@
  * can be loaded in isolation without the full Cacti application.
  */
 
-$GLOBALS['__test_db_calls'] = [];
+$GLOBALS['__test_db_calls']                        = [];
+$GLOBALS['__test_db_fetch_assoc_prepared_result']  = [];
+$GLOBALS['__test_config_options']                  = [];
 
 if (!function_exists('db_execute')) {
 	function db_execute($sql) {
@@ -38,7 +40,7 @@ if (!function_exists('db_fetch_assoc')) {
 
 if (!function_exists('db_fetch_assoc_prepared')) {
 	function db_fetch_assoc_prepared($sql, $params = []) {
-		return [];
+		return $GLOBALS['__test_db_fetch_assoc_prepared_result'];
 	}
 }
 
@@ -102,9 +104,21 @@ if (!function_exists('api_plugin_db_table_create')) {
 	}
 }
 
+if (!function_exists('api_plugin_register_realm')) {
+	/**
+	 * @param  string $plugin
+	 * @param  string $file
+	 * @param  string $display
+	 * @param  int    $grant
+	 * @return void
+	 */
+	function api_plugin_register_realm($plugin, $file, $display, $grant = 0) {
+	}
+}
+
 if (!function_exists('read_config_option')) {
 	function read_config_option($name, $force = false) {
-		return '';
+		return $GLOBALS['__test_config_options'][$name] ?? '';
 	}
 }
 

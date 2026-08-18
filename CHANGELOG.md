@@ -28,7 +28,7 @@
 * feature: Finalize request outcomes and expose external-log delivery status
 * issue: Harden external file logging, retention, malformed records, and replication
 * issue#38: Graph Template table does not exist
-* issue:#66: Restore the advertised PHP 7.4 runtime floor and fail-closed redaction
+* issue#66: Restore the advertised PHP 7.4 runtime floor and fail-closed redaction
 * issue: If the audit log does not exist or is not set, set it and create it
 * issue: Audit assumes that all selected_items are numeric resulting in fatal error
 * feature: Support for Cacti 1.3

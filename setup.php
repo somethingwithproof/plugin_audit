@@ -62,7 +62,8 @@ function audit_setup_realms(bool $grant_installing_user = false): void {
 				AND file IN (?, ?)',
 				['audit', 'audit.php', 'audit_manage.php']);
 
-			if (is_array($realm_ids)) {
+			if (cacti_sizeof($realm_ids)) {
+				/** @var array<int,array<string,mixed>> $realm_ids */
 				foreach ($realm_ids as $realm) {
 					db_execute_prepared('REPLACE INTO user_auth_realm
 					(user_id, realm_id)
@@ -81,7 +82,8 @@ function audit_remove_deprecated_realms(): void {
 		AND file = ?',
 		['audit', 'audit_purge.php']);
 
-	if (is_array($realms)) {
+	if (cacti_sizeof($realms)) {
+		/** @var array<int,array<string,mixed>> $realms */
 		foreach ($realms as $realm) {
 			$realm_id = $realm['id'] + 100;
 
@@ -424,7 +426,7 @@ function audit_upgrade_event_schema($rcnn_id = false): void {
  */
 function plugin_audit_version(): array {
 	global $config;
-	$info        = parse_ini_file($config['base_path'] . '/plugins/audit/INFO', true);
+	$info        = @parse_ini_file($config['base_path'] . '/plugins/audit/INFO', true);
 	$plugin_info = is_array($info) ? ($info['info'] ?? null) : null;
 
 	return is_array($plugin_info) ? $plugin_info : [];

@@ -9,6 +9,7 @@ $audit_test_user_query_failure    = false;
 $audit_test_realm_query_failure   = false;
 $audit_test_object_query_failure  = false;
 $audit_test_external_event        = false;
+$audit_test_external_events       = false;
 $audit_test_external_updates      = [];
 $audit_test_config_options        = [];
 
@@ -43,6 +44,24 @@ function db_fetch_assoc_prepared($sql, $params = []) {
 	return array_map(function ($realm_id) {
 		return ['realm_id' => $realm_id];
 	}, $realm_ids);
+}
+
+/**
+ * @param  string             $sql
+ * @return array<mixed>|false
+ */
+function db_fetch_assoc($sql) {
+	global $audit_test_external_events;
+
+	return $audit_test_external_events;
+}
+
+/**
+ * @param  mixed $value
+ * @return int
+ */
+function cacti_sizeof($value) {
+	return is_array($value) ? count($value) : 0;
 }
 
 /**
@@ -373,6 +392,11 @@ $audit_test_external_event = ['id' => 999];
 audit_deliver_external_event(999);
 audit_test_assert_same('', file_get_contents($temporary_log), 'Events without a request status must not create external records.');
 audit_test_assert_same([], $audit_test_external_updates, 'Events without a request status must not update delivery status.');
+
+$audit_test_external_events = false;
+audit_retry_external_logs();
+audit_test_assert_same('', file_get_contents($temporary_log), 'Failed retry queries must not append external records.');
+audit_test_assert_same([], $audit_test_external_updates, 'Failed retry queries must not update delivery status.');
 
 unlink($temporary_log);
 

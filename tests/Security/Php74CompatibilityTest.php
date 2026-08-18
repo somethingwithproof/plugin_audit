@@ -16,10 +16,18 @@ describe('the advertised PHP 7.4 runtime contract', function () {
 		'setup.php',
 	];
 	$hasPhp8OnlyType = static function (string $contents): bool {
-		$withoutComments = preg_replace('#/\*.*?\*/|//[^\r\n]*#s', '', $contents);
+		$withoutComments = '';
 
-		if ($withoutComments === null) {
-			return true;
+		foreach (token_get_all("<?php\n" . $contents) as $token) {
+			if (is_array($token)) {
+				if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT || $token[0] === T_OPEN_TAG) {
+					continue;
+				}
+
+				$withoutComments .= $token[1];
+			} else {
+				$withoutComments .= $token;
+			}
 		}
 
 		$namedType = '[?\\\\A-Za-z_][\\\\A-Za-z0-9_]*';
@@ -54,7 +62,8 @@ describe('the advertised PHP 7.4 runtime contract', function () {
 	it('distinguishes PHPDoc and regex text from native declarations', function () use ($hasPhp8OnlyType) {
 		expect($hasPhp8OnlyType("/** @param mixed \$value */\nfunction safe(\$value) { return '/a|b/'; }"))->toBeFalse()
 			->and($hasPhp8OnlyType('function nativeMixed(mixed $value) {}'))->toBeTrue()
-			->and($hasPhp8OnlyType('function nativeUnion($value): int|false {}'))->toBeTrue();
+			->and($hasPhp8OnlyType('function nativeUnion($value): int|false {}'))->toBeTrue()
+			->and($hasPhp8OnlyType("function url() { return 'https://example.test'; } function nativeMixed(mixed \$value) {}"))->toBeTrue();
 	});
 
 	it('keeps the compatibility floor explicit in plugin metadata', function () {

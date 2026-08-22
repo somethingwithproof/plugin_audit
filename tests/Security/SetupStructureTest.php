@@ -36,15 +36,28 @@ describe('audit setup.php structure', function () {
 		expect($source)->toContain("\$info['info'] ?? null");
 		expect($source)->toContain('is_array($plugin_info) ? $plugin_info : []');
 
+		$had_config = array_key_exists('config', $GLOBALS);
+		$config     = $GLOBALS['config'] ?? null;
+
+		if (!is_array($GLOBALS['config'] ?? null)) {
+			$GLOBALS['config'] = [];
+		}
+
 		$GLOBALS['config']['base_path'] = '/definitely-missing-audit-test-path';
 		set_error_handler(static function (): bool {
 			return true;
 		});
 
 		try {
-			expect(plugin_audit_version())->toBe([]);
+				expect(plugin_audit_version())->toBe([]);
 		} finally {
 			restore_error_handler();
+
+			if ($had_config) {
+				$GLOBALS['config'] = $config;
+			} else {
+				unset($GLOBALS['config']);
+			}
 		}
 	});
 

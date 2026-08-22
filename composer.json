@@ -6,6 +6,9 @@
         "pestphp/pest": "^1.23"
     },
     "config": {
+        "platform": {
+            "php": "7.4.33"
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
@@ -14,5 +17,8 @@
         "files": [
             "tests/bootstrap.php"
         ]
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
     }
 }

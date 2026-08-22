@@ -2,6 +2,31 @@
 
 --- develop ---
 
+* feature: Add standards-based remote Syslog delivery over UDP, TCP, and verified TLS
+* feature: Add RFC 5424 headers with RFC 5424, CEF, or compact JSON message formats
+* feature: Queue remote delivery in the poller with exponential backoff, dead-letter handling, health reporting, and audited admin actions
+* security: Restrict Syslog settings, tests, and dead-letter retries to Audit Log Admin with validated destinations and CSRF-protected POST actions
+* security: Preserve unfinished Syslog evidence during scheduled retention and manual purge
+* issue: Capture expected Syslog connection and write warnings without leaking PHP notices into the Cacti poller log
+* feature: Include redacted submitted, object, and detail data in CEF Syslog records
+* feature: Verify user realm permission saves against the resulting database state
+* security: Group Audit Log User and Audit Log Admin permissions under Audit Plugin
+* feature: Add normalized compliance event identifiers, categories, actors, targets, outcomes, timing, and integrity metadata
+* feature: Deliver finalized request outcomes to external log consumers
+* feature: Audit audit-log views, searches, event detail access, exports, and purges
+* feature: Capture Cacti 1.2.x logout and session-timeout events through the supported logout hook
+* feature: Finalize captured CLI activity and make it available to external log delivery
+* feature: Add selectable text or JSON formats for external audit logging
+* feature: Rename outcome to request_status with started/completed/failed values
+* feature: Track and retry failed external audit-log delivery
+* security: Bound nested request depth, field counts, string sizes, and JSON parsing
+* security: Escape stored audit data before rendering to prevent stored XSS
+* security: Require an authorized, CSRF-protected POST to purge the audit log
+* security: Recursively redact sensitive web and CLI values
+* security: Generate standards-compliant, spreadsheet-safe CSV exports
+* feature: Mark hook-time records explicitly as attempted actions
+* feature: Finalize request outcomes and expose external-log delivery status
+* issue: Harden external file logging, retention, malformed records, and replication
 * issue#38: Graph Template table does not exist
 * issue: If the audit log does not exist or is not set, set it and create it
 * issue: Audit assumes that all selected_items are numeric resulting in fatal error

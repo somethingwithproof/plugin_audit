@@ -4,7 +4,7 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
-msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2025-07-03 09:26+0000\nLast-Translator: Ekaterine papava <papava.e@gtu.ge>\nLanguage-Team: Georgian <https://translate.cacti.net/projects/cacti/audit/ka/>\nLanguage: ka-GE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 5.11.4\n"
+msgstr "Project-Id-Version: Cacti\nReport-Msgid-Bugs-To: developers@cacti.net\nPOT-Creation-Date: 2024-06-08 09:09-0400\nPO-Revision-Date: 2026-08-04 05:18+0000\nLast-Translator: Ekaterine papava <papava.e@gtu.ge>\nLanguage-Team: Georgian <https://translate.cacti.net/projects/cacti/audit/ka/>\nLanguage: ka-GE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=n != 1;\nX-Generator: Weblate 5.11.4\n"
 
 #: audit.php:54 audit.php:77
 msgid "Page:"
@@ -272,3 +272,60 @@ msgstr "აუდიტი"
 #: setup.php:316
 msgid "Audit Event Log"
 msgstr "აუდიტის მოვლენის ჟურნალი"
+
+#: audit.php
+msgid "Audit event not found."
+msgstr "აუდიტის მოვლენის აღმოჩენილი არაა."
+
+#: audit.php
+msgid "External Delivery:"
+msgstr "გარე მიწოდება:"
+
+#: audit.php
+msgid "External Error:"
+msgstr "გარე შეცდომა:"
+
+#: audit.php
+msgid "Stored Data"
+msgstr "დამახსოვრებული მონაცემები"
+
+#: audit.php
+#, php-format
+msgid "The stored request data is not valid JSON: %s"
+msgstr "დამახსოვრებული მოთხოვნის მონაცემები სწორი JSON არაა: %s"
+
+#: audit.php
+msgid "Requested Action"
+msgstr "მოთხოვნილი ქმედება"
+
+#: audit.php
+msgid "The requested Cacti action. Hover over the action to see request data."
+msgstr "მოთხოვნილი Cacti -ის ქმედება. გააჩერეთ ზედ თაგუნას კურსორი, რომ დაინახოთ მოთხოვნის მონაცემები."
+
+#: audit.php
+msgid "Request Status"
+msgstr "მოთხოვნის სტატუსი"
+
+#: audit.php
+msgid "Request Status:"
+msgstr "მოთხოვნის სტატუსი:"
+
+#: audit.php
+msgid "Request processing state; completion does not guarantee that every operation succeeded."
+msgstr "მოთხოვნის დამუშავების მდგომარეობა. დასრულება არ იძლევა გარანტიას, რომ ყველა ოპერაცია წარმატებით დასრულდა."
+
+#: audit.php
+msgid "External Delivery"
+msgstr "გარე მიწოდება"
+
+#: audit.php
+msgid "Delivery state for the optional external audit log."
+msgstr "მიწოდების მდგომარეობა არასავალდებულო გარე აუდიტის ჟურნალისთვის."
+
+#: audit.php
+msgid "Permanently purge all audit log events?"
+msgstr "წაიშალოს სამუდამოდ ყველა აუდიტის ჟურნალის მოვლენა?"
+
+#: setup.php
+msgid "Manage Cacti Audit Log"
+msgstr "Cacti-ის აუდიტის ჟურნალის მართვა"

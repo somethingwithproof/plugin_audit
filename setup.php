@@ -24,7 +24,7 @@
 
 include_once('audit_functions.php');
 
-function plugin_audit_install() {
+function plugin_audit_install(): void {
 	api_plugin_register_hook('audit', 'config_arrays',        'audit_config_arrays',        'setup.php');
 	api_plugin_register_hook('audit', 'config_settings',      'audit_config_settings',      'setup.php');
 	api_plugin_register_hook('audit', 'config_insert',        'audit_config_insert',        'setup.php');
@@ -32,22 +32,86 @@ function plugin_audit_install() {
 	api_plugin_register_hook('audit', 'draw_navigation_text', 'audit_draw_navigation_text', 'setup.php');
 	api_plugin_register_hook('audit', 'utilities_array',      'audit_utilities_array',      'setup.php');
 	api_plugin_register_hook('audit', 'is_console_page',      'audit_is_console_page',      'setup.php');
+	api_plugin_register_hook('audit', 'logout_pre_session_destroy', 'audit_logout_pre_session_destroy', 'setup.php');
 
 	// hook for table replication
 	api_plugin_register_hook('audit', 'replicate_out',        'audit_replicate_out',        'setup.php');
 
-	api_plugin_register_realm('audit', 'audit.php', __('View Cacti Audit Log', 'audit'), 1);
+	audit_setup_realms(true);
 
 	audit_setup_table();
 }
 
-function plugin_audit_uninstall() {
+function audit_setup_realms(bool $grant_installing_user = false): void {
+	$realms = [
+		'audit.php'        => __('Audit Log User', 'audit'),
+		'audit_manage.php' => __('Audit Log Admin', 'audit')
+	];
+
+	foreach ($realms as $file => $display) {
+		api_plugin_register_realm('audit', $file, $display, $grant_installing_user ? 1 : 0);
+	}
+
+	if (!$grant_installing_user) {
+		$admin_user = (int) read_config_option('admin_user');
+
+		if ($admin_user > 0) {
+			$realm_ids = db_fetch_assoc_prepared('SELECT id + 100 AS realm_id
+				FROM plugin_realms
+				WHERE plugin = ?
+				AND file IN (?, ?)',
+				['audit', 'audit.php', 'audit_manage.php']);
+
+			if (is_array($realm_ids)) {
+				foreach ($realm_ids as $realm) {
+					db_execute_prepared('REPLACE INTO user_auth_realm
+					(user_id, realm_id)
+					VALUES (?, ?)',
+						[$admin_user, $realm['realm_id']]);
+				}
+			}
+		}
+	}
+}
+
+function audit_remove_deprecated_realms(): void {
+	$realms = db_fetch_assoc_prepared('SELECT id
+		FROM plugin_realms
+		WHERE plugin = ?
+		AND file = ?',
+		['audit', 'audit_purge.php']);
+
+	if (is_array($realms)) {
+		foreach ($realms as $realm) {
+			$realm_id = $realm['id'] + 100;
+
+			db_execute_prepared('DELETE FROM user_auth_realm
+				WHERE realm_id = ?',
+				[$realm_id]);
+
+			db_execute_prepared('DELETE FROM user_auth_group_realm
+				WHERE realm_id = ?',
+				[$realm_id]);
+
+			db_execute_prepared('DELETE FROM plugin_realms
+				WHERE id = ?',
+				[$realm['id']]);
+		}
+	}
+
+	if (cacti_sizeof($realms)) {
+		api_plugin_replicate_config();
+	}
+}
+
+function plugin_audit_uninstall(): bool {
+	db_execute('DROP TABLE IF EXISTS audit_syslog_delivery');
 	db_execute('DROP TABLE IF EXISTS audit_log');
 
 	return true;
 }
 
-function audit_is_console_page($url) {
+function audit_is_console_page(string $url): bool {
 	if (strpos($url, 'audit.php') !== false) {
 		return true;
 	}
@@ -55,15 +119,15 @@ function audit_is_console_page($url) {
 	return false;
 }
 
-function plugin_audit_check_config() {
+function plugin_audit_check_config(): bool {
 	return true;
 }
 
-function plugin_audit_upgrade() {
+function plugin_audit_upgrade(): bool {
 	return true;
 }
 
-function audit_check_upgrade() {
+function audit_check_upgrade(): void {
 	global $config, $database_default;
 	include_once($config['library_path'] . '/database.php');
 	include_once($config['library_path'] . '/functions.php');
@@ -76,51 +140,64 @@ function audit_check_upgrade() {
 
 	$info    = plugin_audit_version();
 	$current = $info['version'];
-	$old     = db_fetch_cell("SELECT version FROM plugin_config WHERE directory='audit'");
+	$old     = db_fetch_cell_prepared('SELECT version FROM plugin_config WHERE directory = ?', ['audit']);
 
 	if ($current != $old) {
 		if (api_plugin_is_enabled('audit')) {
 			// may sound ridiculous, but enables new hooks
 			api_plugin_enable_hooks('audit');
-
-			db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB');
 		}
 
-		db_execute("UPDATE plugin_config
-			SET version='$current'
-			WHERE directory='audit'");
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB');
 
-		db_execute("UPDATE plugin_config SET
-			version='" . $info['version'] . "',
-			name='" . $info['longname'] . "',
-			author='" . $info['author'] . "',
-			webpage='" . $info['homepage'] . "'
-			WHERE directory='" . $info['name'] . "' ");
+		if (db_column_exists('audit_log', 'outcome')) {
+			if (!db_column_exists('audit_log', 'request_status')) {
+				db_execute("ALTER TABLE audit_log CHANGE COLUMN outcome request_status varchar(20) NOT NULL DEFAULT 'unknown'");
+			} else {
+				db_execute("UPDATE audit_log SET request_status = outcome WHERE request_status = 'unknown'");
+				db_execute('ALTER TABLE audit_log DROP COLUMN outcome');
+			}
+		} elseif (!db_column_exists('audit_log', 'request_status')) {
+			db_execute("ALTER TABLE audit_log ADD COLUMN request_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER action");
+		}
+
+		db_execute("UPDATE audit_log SET request_status = CASE request_status
+			WHEN 'attempted' THEN 'started'
+			WHEN 'request_completed' THEN 'completed'
+			WHEN 'request_failed' THEN 'failed'
+			ELSE request_status END");
+		db_execute("ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER object_data");
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_error varchar(1024) DEFAULT NULL AFTER external_status');
+		audit_upgrade_event_schema();
+		audit_setup_syslog_table();
+		audit_setup_realms();
+		audit_remove_deprecated_realms();
+
+		db_execute_prepared('UPDATE plugin_config
+			SET version = ?
+			WHERE directory = ?',
+			[$current, 'audit']);
+
+		db_execute_prepared('UPDATE plugin_config SET
+			version = ?,
+			name = ?,
+			author = ?,
+			webpage = ?
+			WHERE directory = ?',
+			[$info['version'], $info['longname'], $info['author'], $info['homepage'], $info['name']]);
 
 		// hook for table replication
-		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', '1');
+		api_plugin_register_hook('audit', 'replicate_out', 'audit_replicate_out', 'setup.php', 1);
 		api_plugin_register_hook('audit', 'is_console_page', 'audit_is_console_page', 'setup.php', 1);
+		api_plugin_register_hook('audit', 'logout_pre_session_destroy', 'audit_logout_pre_session_destroy', 'setup.php', 1);
 	}
 }
 
-function audit_check_dependencies($data) {
-	$remote_poller_id = $data['remote_poller_id'];
-	$rcnn_id          = $data['rcnn_id'];
-	$class            = $data['class'];
-
-	if ($class == 'all') {
-		if (!db_table_exists('alert_log', false, $rcnn_id)) {
-			$create = db_fetch_cell('SHOW CREATE TABLE autid_log');
-
-			db_execute($create, false, $rcnn_id);
-		}
-	}
-
-	return $data;
-}
-
-function audit_replicate_out($data) {
-	$remote_poller_id = $data['remote_poller_id'];
+/**
+ * @param  array<string,mixed> $data
+ * @return array<string,mixed>
+ */
+function audit_replicate_out(array $data): array {
 	$rcnn_id          = $data['rcnn_id'];
 	$class            = $data['class'];
 
@@ -141,23 +218,57 @@ function audit_replicate_out($data) {
 				}
 			}
 		} else {
-			cacti_log('INFO: Audit Log table exists skipping', false, 'REPLICATE');
+			cacti_log('INFO: Audit Log table exists, checking schema', false, 'REPLICATE');
 		}
+
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS object_data LONGBLOB', true, $rcnn_id);
+
+		if (db_column_exists('audit_log', 'outcome', false, $rcnn_id)) {
+			if (!db_column_exists('audit_log', 'request_status', false, $rcnn_id)) {
+				db_execute("ALTER TABLE audit_log CHANGE COLUMN outcome request_status varchar(20) NOT NULL DEFAULT 'unknown'", true, $rcnn_id);
+			} else {
+				db_execute("UPDATE audit_log SET request_status = outcome WHERE request_status = 'unknown'", true, $rcnn_id);
+				db_execute('ALTER TABLE audit_log DROP COLUMN outcome', true, $rcnn_id);
+			}
+		} elseif (!db_column_exists('audit_log', 'request_status', false, $rcnn_id)) {
+			db_execute("ALTER TABLE audit_log ADD COLUMN request_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER action", true, $rcnn_id);
+		}
+
+		db_execute("UPDATE audit_log SET request_status = CASE request_status
+			WHEN 'attempted' THEN 'started'
+			WHEN 'request_completed' THEN 'completed'
+			WHEN 'request_failed' THEN 'failed'
+			ELSE request_status END", true, $rcnn_id);
+		db_execute("ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_status varchar(20) NOT NULL DEFAULT 'unknown' AFTER object_data", true, $rcnn_id);
+		db_execute('ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS external_error varchar(1024) DEFAULT NULL AFTER external_status', true, $rcnn_id);
+		audit_upgrade_event_schema($rcnn_id);
 	}
 
 	return $data;
 }
 
-function audit_poller_bottom() {
-	$last_check = read_config_option('audit_last_check');
+function audit_poller_bottom(): void {
+	audit_retry_external_logs();
+	audit_process_syslog_queue();
 
-	$now = date('d');
+	$last_check = read_config_option('audit_last_check');
+	$now        = gmdate('Y-m-d');
 
 	if ($last_check != $now) {
 		$retention = read_config_option('audit_retention');
 
 		if ($retention > 0) {
-			db_execute('DELETE FROM audit_log WHERE event_time < FROM_UNIXTIME(' . (time() - ($retention * 86400)) . ')');
+			$cutoff = audit_retention_cutoff($retention);
+
+			db_execute_prepared("DELETE FROM audit_log
+				WHERE event_time < ?
+				AND NOT EXISTS (
+					SELECT 1
+					FROM audit_syslog_delivery
+					WHERE audit_syslog_delivery.audit_id = audit_log.id
+					AND audit_syslog_delivery.state IN ('pending', 'retry', 'dead_letter')
+				)",
+				[$cutoff->format('Y-m-d H:i:s')]);
 			$rows = db_affected_rows();
 			cacti_log('NOTE: Purged ' . $rows . ' Audit Log Records from Cacti', false, 'POLLER');
 		}
@@ -166,7 +277,7 @@ function audit_poller_bottom() {
 	set_config_option('audit_last_check', $now);
 }
 
-function audit_setup_table() {
+function audit_setup_table(): bool {
 	global $config, $database_default;
 	include_once($config['library_path'] . '/database.php');
 
@@ -175,31 +286,148 @@ function audit_setup_table() {
 		`page` varchar(40) DEFAULT NULL,
 		`user_id` int(10) unsigned DEFAULT NULL,
 		`action` varchar(20) DEFAULT NULL,
+		`request_status` varchar(20) NOT NULL DEFAULT 'unknown',
 		`ip_address` varchar(40) DEFAULT NULL,
 		`user_agent` varchar(256) DEFAULT NULL,
 		`event_time` timestamp DEFAULT CURRENT_TIMESTAMP,
 		`post` longblob,
 		`object_data` longblob,
+		`external_status` varchar(20) NOT NULL DEFAULT 'unknown',
+		`external_error` varchar(1024) DEFAULT NULL,
+		`event_uuid` char(36) DEFAULT NULL,
+		`correlation_id` char(36) DEFAULT NULL,
+		`event_type` varchar(100) NOT NULL DEFAULT 'cacti.request',
+		`event_category` varchar(40) NOT NULL DEFAULT 'configuration',
+		`severity` varchar(12) NOT NULL DEFAULT 'info',
+		`actor_type` varchar(20) NOT NULL DEFAULT 'user',
+		`target_type` varchar(64) DEFAULT NULL,
+		`target_id` varchar(128) DEFAULT NULL,
+		`operation_outcome` varchar(20) NOT NULL DEFAULT 'unknown',
+		`outcome_reason` varchar(255) DEFAULT NULL,
+		`http_method` varchar(10) DEFAULT NULL,
+		`http_status` smallint unsigned DEFAULT NULL,
+		`completed_time` datetime(6) DEFAULT NULL,
+		`duration_ms` bigint unsigned DEFAULT NULL,
+		`details` longblob,
+		`previous_hash` char(64) DEFAULT NULL,
+		`integrity_hash` char(64) DEFAULT NULL,
+		`external_attempts` int unsigned NOT NULL DEFAULT 0,
+		`external_last_attempt` datetime(6) DEFAULT NULL,
+		`external_delivered_time` datetime(6) DEFAULT NULL,
 		PRIMARY KEY (`id`),
 		KEY `user_id` (`user_id`),
 		KEY `page` (`page`),
 		KEY `ip_address` (`ip_address`),
 		KEY `event_time` (`event_time`),
-		KEY `action` (`action`))
+		KEY `action` (`action`),
+		UNIQUE KEY `event_uuid` (`event_uuid`),
+		KEY `correlation_id` (`correlation_id`),
+		KEY `event_type` (`event_type`),
+		KEY `operation_outcome` (`operation_outcome`),
+		KEY `external_status` (`external_status`))
 		ENGINE=InnoDB
 		COMMENT='Audit Log for all GUI activities'");
+
+	audit_setup_syslog_table();
 
 	return true;
 }
 
-function plugin_audit_version() {
-	global $config;
-	$info = parse_ini_file($config['base_path'] . '/plugins/audit/INFO', true);
+function audit_setup_syslog_table(): void {
+	db_execute("CREATE TABLE IF NOT EXISTS `audit_syslog_delivery` (
+		`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		`audit_id` bigint(20) unsigned NOT NULL,
+		`event_uuid` char(36) NOT NULL,
+		`destination_fingerprint` char(64) NOT NULL,
+		`node_id` varchar(255) NOT NULL,
+		`poller_id` varchar(64) DEFAULT NULL,
+		`state` varchar(20) NOT NULL DEFAULT 'pending',
+		`attempts` int unsigned NOT NULL DEFAULT 0,
+		`next_attempt` datetime(6) NOT NULL,
+		`last_attempt` datetime(6) DEFAULT NULL,
+		`sent_time` datetime(6) DEFAULT NULL,
+		`last_error` varchar(1024) DEFAULT NULL,
+		`created_time` datetime(6) NOT NULL,
+		`updated_time` datetime(6) NOT NULL,
+		PRIMARY KEY (`id`),
+		UNIQUE KEY `audit_destination` (`audit_id`, `destination_fingerprint`),
+		KEY `event_uuid` (`event_uuid`),
+		KEY `state_next_attempt` (`state`, `next_attempt`),
+		KEY `destination_state` (`destination_fingerprint`, `state`),
+		CONSTRAINT `fk_audit_syslog_event`
+			FOREIGN KEY (`audit_id`) REFERENCES `audit_log` (`id`)
+			ON DELETE CASCADE)
+		ENGINE=InnoDB
+		COMMENT='Remote Syslog delivery queue for audit events'");
 
-	return $info['info'];
+	db_execute("ALTER TABLE audit_syslog_delivery
+		ADD COLUMN IF NOT EXISTS node_id varchar(255) NOT NULL DEFAULT 'cacti'
+		AFTER destination_fingerprint");
+	db_execute('ALTER TABLE audit_syslog_delivery
+		ADD COLUMN IF NOT EXISTS poller_id varchar(64) DEFAULT NULL
+		AFTER node_id');
 }
 
-function audit_log_valid_event() {
+function audit_upgrade_event_schema(mixed $rcnn_id = false): void {
+	$remote  = $rcnn_id !== false;
+	$args    = $remote ? [true, $rcnn_id] : [];
+	$columns = [
+		'event_uuid char(36) DEFAULT NULL',
+		'correlation_id char(36) DEFAULT NULL',
+		"event_type varchar(100) NOT NULL DEFAULT 'cacti.request'",
+		"event_category varchar(40) NOT NULL DEFAULT 'configuration'",
+		"severity varchar(12) NOT NULL DEFAULT 'info'",
+		"actor_type varchar(20) NOT NULL DEFAULT 'user'",
+		'target_type varchar(64) DEFAULT NULL',
+		'target_id varchar(128) DEFAULT NULL',
+		"operation_outcome varchar(20) NOT NULL DEFAULT 'unknown'",
+		'outcome_reason varchar(255) DEFAULT NULL',
+		'http_method varchar(10) DEFAULT NULL',
+		'http_status smallint unsigned DEFAULT NULL',
+		'completed_time datetime(6) DEFAULT NULL',
+		'duration_ms bigint unsigned DEFAULT NULL',
+		'details longblob',
+		'previous_hash char(64) DEFAULT NULL',
+		'integrity_hash char(64) DEFAULT NULL',
+		'external_attempts int unsigned NOT NULL DEFAULT 0',
+		'external_last_attempt datetime(6) DEFAULT NULL',
+		'external_delivered_time datetime(6) DEFAULT NULL'
+	];
+
+	foreach ($columns as $definition) {
+		call_user_func_array('db_execute', array_merge(
+			['ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS ' . $definition],
+			$args
+		));
+	}
+
+	$indexes = [
+		'event_uuid'        => ['UNIQUE INDEX', ['event_uuid']],
+		'correlation_id'    => ['INDEX', ['correlation_id']],
+		'event_type'        => ['INDEX', ['event_type']],
+		'operation_outcome' => ['INDEX', ['operation_outcome']],
+		'external_status'   => ['INDEX', ['external_status']]
+	];
+
+	foreach ($indexes as $name => $definition) {
+		if (!db_index_exists('audit_log', $name, false, $remote ? $rcnn_id : false)) {
+			db_add_index('audit_log', $definition[0], $name, $definition[1], true, $remote ? $rcnn_id : false);
+		}
+	}
+}
+
+/**
+ * @return array<string,mixed>
+ */
+function plugin_audit_version(): array {
+	global $config;
+	$info        = parse_ini_file($config['base_path'] . '/plugins/audit/INFO', true);
+	$plugin_info = is_array($info) ? ($info['info'] ?? null) : null;
+
+	return is_array($plugin_info) ? $plugin_info : [];
+}
+
+function audit_log_valid_event(): bool {
 	global $action;
 
 	$valid = false;
@@ -221,7 +449,8 @@ function audit_log_valid_event() {
 			$valid = false;
 		} elseif (strpos($_SERVER['SCRIPT_NAME'], 'auth_changepassword.php') !== false) {
 			$valid = false;
-		} elseif (isset($_POST) && sizeof($_POST)) {
+		} elseif (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' &&
+			cacti_sizeof(filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW))) {
 			$valid = true;
 		} elseif (isset_request_var('purge_continue')) {
 			$valid  = true;
@@ -232,7 +461,7 @@ function audit_log_valid_event() {
 	return $valid;
 }
 
-function audit_utilities_array() {
+function audit_utilities_array(): void {
 	global $utilities;
 
 	if (version_compare(CACTI_VERSION, '1.3.0', '<')) {
@@ -250,7 +479,7 @@ function audit_utilities_array() {
 	}
 }
 
-function audit_config_arrays() {
+function audit_config_arrays(): void {
 	global $menu, $messages, $audit_retentions, $utilities;
 
 	if (isset($_SESSION['audit_message']) && $_SESSION['audit_message'] != '') {
@@ -273,13 +502,13 @@ function audit_config_arrays() {
 	$menu[__('Utilities')]['plugins/audit/audit.php'] = __('Audit Log', 'audit');
 
 	if (function_exists('auth_augment_roles')) {
-		auth_augment_roles(__('System Administration'), ['audit.php']);
+		auth_augment_roles(__('Audit Plugin', 'audit'), ['audit.php', 'audit_manage.php']);
 	}
 
 	audit_check_upgrade();
 }
 
-function audit_config_settings() {
+function audit_config_settings(): void {
 	global $tabs, $settings, $item_rows, $audit_retentions;
 
 	$temp = [
@@ -306,6 +535,16 @@ function audit_config_settings() {
 			'method'        => 'checkbox',
 			'default'       => 'off'
 		],
+		'audit_log_external_format' => [
+			'friendly_name' => __('External Audit Log Format', 'audit'),
+			'description'   => __('Select the output format for external audit log records.', 'audit'),
+			'method'        => 'drop_array',
+			'default'       => 'json',
+			'array'         => [
+				'text' => __('Text', 'audit'),
+				'json' => __('JSON', 'audit')
+			]
+		],
 		'audit_log_external_path' => [
 			'friendly_name' => __('External Audit Log Log file  Path', 'audit'),
 			'description'   => __('Enter the path to the external audit log file.', 'audit'),
@@ -314,6 +553,183 @@ function audit_config_settings() {
 			'max_length'    => '255'
 		],
 	];
+
+	if (php_sapi_name() === 'cli' || audit_user_is_admin()) {
+		$facility_options = [];
+
+		foreach (audit_syslog_facilities() as $facility => $code) {
+			$facility_options[$facility] = strtoupper($facility) . ' (' . $code . ')';
+		}
+
+		$syslog = [
+			'audit_syslog_header' => [
+				'friendly_name' => __('Remote Syslog', 'audit'),
+				'method'        => 'spacer'
+			],
+			'audit_syslog_enabled' => [
+				'friendly_name' => __('Enable Remote Syslog', 'audit'),
+				'description'   => __('Queue finalized audit events for remote Syslog delivery. The existing external file output remains independent.', 'audit'),
+				'method'        => 'checkbox',
+				'default'       => 'off'
+			],
+			'audit_syslog_receiver' => [
+				'friendly_name' => __('Syslog Receiver', 'audit'),
+				'description'   => __('Enter a receiver hostname or IP address without a URI scheme, path, or credentials.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '',
+				'max_length'    => '253',
+				'size'          => '60'
+			],
+			'audit_syslog_port' => [
+				'friendly_name' => __('Syslog Port', 'audit'),
+				'description'   => __('Enter 1-65535, or leave blank to use 514 for UDP/TCP and 6514 for TLS.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '',
+				'max_length'    => '5',
+				'size'          => '8'
+			],
+			'audit_syslog_transport' => [
+				'friendly_name' => __('Syslog Transport', 'audit'),
+				'description'   => __('UDP sends one datagram without acknowledgement. TCP and TLS use RFC 6587 octet-count framing.', 'audit'),
+				'method'        => 'drop_array',
+				'default'       => 'udp',
+				'array'         => [
+					'udp' => __('UDP', 'audit'),
+					'tcp' => __('TCP', 'audit'),
+					'tls' => __('TLS', 'audit')
+				]
+			],
+			'audit_syslog_format' => [
+				'friendly_name' => __('Syslog Payload Format', 'audit'),
+				'description'   => __('All formats use an RFC 5424 header. Select RFC 5424 structured data, CEF, or compact JSON for the message.', 'audit'),
+				'method'        => 'drop_array',
+				'default'       => 'json',
+				'array'         => [
+					'rfc5424' => __('RFC 5424', 'audit'),
+					'cef'     => __('CEF', 'audit'),
+					'json'    => __('JSON', 'audit')
+				]
+			],
+			'audit_syslog_facility' => [
+				'friendly_name' => __('Syslog Facility', 'audit'),
+				'description'   => __('Select the facility used to calculate the RFC 5424 priority.', 'audit'),
+				'method'        => 'drop_array',
+				'default'       => 'local0',
+				'array'         => $facility_options
+			],
+			'audit_syslog_application' => [
+				'friendly_name' => __('Syslog Application Name', 'audit'),
+				'description'   => __('RFC 5424 APP-NAME. Printable non-space ASCII, up to 48 characters.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => 'cacti-audit',
+				'max_length'    => '48',
+				'size'          => '30'
+			],
+			'audit_syslog_node_id' => [
+				'friendly_name' => __('Audit Node Identity', 'audit'),
+				'description'   => __('Stable RFC 5424 hostname identity for this Cacti node. Do not use a value that changes on restart.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => php_uname('n'),
+				'max_length'    => '255',
+				'size'          => '60'
+			],
+			'audit_syslog_timeout' => [
+				'friendly_name' => __('Connection and Write Timeout', 'audit'),
+				'description'   => __('Timeout in seconds, from 1 through 30.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '5',
+				'max_length'    => '2',
+				'size'          => '8'
+			],
+			'audit_syslog_udp_max_size' => [
+				'friendly_name' => __('Maximum UDP Record Size', 'audit'),
+				'description'   => __('Records larger than this byte limit are dead-lettered and are never truncated or split. TCP or TLS is recommended for large events.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '8192',
+				'max_length'    => '5',
+				'size'          => '10'
+			],
+			'audit_syslog_tls_header' => [
+				'friendly_name' => __('Syslog TLS', 'audit'),
+				'method'        => 'spacer'
+			],
+			'audit_syslog_tls_ca_file' => [
+				'friendly_name' => __('TLS CA File', 'audit'),
+				'description'   => __('Optional PEM CA bundle. Peer and hostname verification are always enabled.', 'audit'),
+				'method'        => 'filepath',
+				'default'       => '',
+				'max_length'    => '255'
+			],
+			'audit_syslog_tls_client_cert' => [
+				'friendly_name' => __('TLS Client Certificate', 'audit'),
+				'description'   => __('Optional PEM client certificate. A client key must also be configured.', 'audit'),
+				'method'        => 'filepath',
+				'default'       => '',
+				'max_length'    => '255'
+			],
+			'audit_syslog_tls_client_key' => [
+				'friendly_name' => __('TLS Client Private Key', 'audit'),
+				'description'   => __('Optional readable PEM private-key path. The key contents are never stored in audit events.', 'audit'),
+				'method'        => 'filepath',
+				'default'       => '',
+				'max_length'    => '255'
+			],
+			'audit_syslog_delivery_header' => [
+				'friendly_name' => __('Syslog Delivery Queue', 'audit'),
+				'method'        => 'spacer'
+			],
+			'audit_syslog_retry_base' => [
+				'friendly_name' => __('Retry Base Delay', 'audit'),
+				'description'   => __('Initial retry delay in seconds, from 1 through 3600.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '30',
+				'max_length'    => '4',
+				'size'          => '8'
+			],
+			'audit_syslog_retry_max' => [
+				'friendly_name' => __('Maximum Retry Delay', 'audit'),
+				'description'   => __('Maximum retry delay in seconds, from the base delay through 86400.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '3600',
+				'max_length'    => '5',
+				'size'          => '8'
+			],
+			'audit_syslog_max_attempts' => [
+				'friendly_name' => __('Maximum Delivery Attempts', 'audit'),
+				'description'   => __('Move a record to dead-letter after this many attempts, from 1 through 100.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '10',
+				'max_length'    => '3',
+				'size'          => '8'
+			],
+			'audit_syslog_batch_size' => [
+				'friendly_name' => __('Poller Batch Size', 'audit'),
+				'description'   => __('Maximum due records processed per poller cycle, from 1 through 1000.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '100',
+				'max_length'    => '4',
+				'size'          => '8'
+			],
+			'audit_syslog_pending_age_warning' => [
+				'friendly_name' => __('Pending Age Warning', 'audit'),
+				'description'   => __('Show an unhealthy warning when the oldest queued record reaches this age in seconds.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '900',
+				'max_length'    => '6',
+				'size'          => '10'
+			],
+			'audit_syslog_dead_letter_warning' => [
+				'friendly_name' => __('Dead-letter Warning Count', 'audit'),
+				'description'   => __('Show an unhealthy warning when this many records are dead-lettered.', 'audit'),
+				'method'        => 'textbox',
+				'default'       => '1',
+				'max_length'    => '7',
+				'size'          => '10'
+			]
+		];
+
+		$temp = array_merge($temp, $syslog);
+	}
 
 	$tabs['audit'] = __('Audit', 'audit');
 
@@ -324,7 +740,11 @@ function audit_config_settings() {
 	}
 }
 
-function audit_draw_navigation_text($nav) {
+/**
+ * @param  array<string,mixed> $nav
+ * @return array<string,mixed>
+ */
+function audit_draw_navigation_text(array $nav): array {
 	$nav['audit.php:'] = [
 		'title'   => __('Audit Event Log', 'audit'),
 		'mapping' => 'index.php:',

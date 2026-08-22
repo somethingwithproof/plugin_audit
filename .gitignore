@@ -22,4 +22,13 @@
 
 
 locales/po/*.mo
-.omc/
+
+# PHPStan
+phpstan.cache/
+.phpstan-baseline.neon.local
+
+# PHP-CS-Fixer
+.php-cs-fixer.cache
+
+# Pest / PHPUnit
+.phpunit.result.cache

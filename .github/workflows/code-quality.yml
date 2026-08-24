@@ -88,7 +88,7 @@ jobs:
 
       - name: Run Pest Tests
         if: ${{ matrix.php != '8.1' }}
-        run: include/vendor/bin/pest plugins/audit/tests/Security --display-warnings
+        run: include/vendor/bin/pest plugins/audit/tests/Security --bootstrap plugins/audit/tests/bootstrap.php --display-warnings
         working-directory: cacti
 
       - name: Run Audit Security Helper Tests

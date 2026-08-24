@@ -215,7 +215,7 @@ if (!defined('MESSAGE_LEVEL_ERROR')) {
 }
 
 if (!function_exists('plugin_test_read_source')) {
-	function plugin_test_read_source($relative_file) {
+	function plugin_test_read_source(string $relative_file) : string {
 		$path = realpath(__DIR__ . '/../' . $relative_file);
 
 		if ($path === false) {

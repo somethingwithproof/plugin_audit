@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 require_once __DIR__ . '/audit_syslog.php';
 
@@ -17,6 +17,7 @@ function audit_process_page_data(string $page, mixed $drop_action, array $select
 	if ($page === '') {
 		return json_encode($objects);
 	}
+
 	if ($drop_action !== false) {
 		switch ($page) {
 			case 'host.php':

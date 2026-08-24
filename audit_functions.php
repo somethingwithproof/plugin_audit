@@ -15,7 +15,7 @@ function audit_process_page_data(string $page, mixed $drop_action, array $select
 	$objects = [];
 
 	if ($page === '') {
-		return json_encode($objects);
+		return audit_json_encode($objects);
 	}
 
 	if ($drop_action !== false) {

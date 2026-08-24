@@ -12,8 +12,9 @@
  +-------------------------------------------------------------------------+
  */
 
-$source = plugin_test_read_source('setup.php');
+$source   = plugin_test_read_source('setup.php');
 $infoFile = parse_ini_file(__DIR__ . '/../../INFO', true);
+
 if (!is_array($infoFile) || !isset($infoFile['info']) || !is_array($infoFile['info'])) {
 	throw new RuntimeException('Unable to parse the INFO section');
 }

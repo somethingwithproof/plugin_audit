@@ -128,7 +128,7 @@ switch(get_request_var('action')) {
 			WHERE id = ?',
 			[get_filter_request_var('id')]);
 
-		if (!is_array($data) || $data === []) {
+		if ($data === false || cacti_sizeof($data) === 0) {
 			http_response_code(404);
 			print html_escape(__('Audit event not found.', 'audit'));
 
@@ -177,7 +177,7 @@ function audit_render_event_details(array $data): string {
 		$output .= '<br><span><b>' . __('External File Error:', 'audit') . '</b>  <i>' . html_escape($data['external_error']) . '</i></span>';
 	}
 
-	if (audit_syslog_enabled() && db_table_exists('audit_syslog_delivery')) {
+	if (db_table_exists('audit_syslog_delivery')) {
 		$syslog = db_fetch_row_prepared('SELECT state, attempts, last_attempt, sent_time, last_error
 			FROM audit_syslog_delivery
 			WHERE audit_id = ?
@@ -185,7 +185,7 @@ function audit_render_event_details(array $data): string {
 			LIMIT 1',
 			[$data['id']]);
 
-		if (is_array($syslog) && cacti_sizeof($syslog) > 0) {
+		if (cacti_sizeof($syslog) > 0) {
 			$state      = (string) ($syslog['state'] ?? 'unknown');
 			$attempts   = (int) ($syslog['attempts'] ?? 0);
 			$sent_time  = (string) ($syslog['sent_time'] ?? '');
@@ -725,13 +725,10 @@ function audit_log(): void {
 }
 
 function audit_render_syslog_health(): void {
-	if (!audit_syslog_enabled()) {
-		return;
-	}
-
 	$config    = audit_syslog_config();
 	$health    = audit_syslog_health();
-	$unhealthy = (
+	$enabled   = audit_syslog_enabled();
+	$unhealthy = $enabled && (
 		!$config['valid'] ||
 		$health['dead_letter'] >= $config['dead_letter_warning'] ||
 		$health['oldest_pending_seconds'] >= $config['pending_age_warning']
@@ -741,7 +738,7 @@ function audit_render_syslog_health(): void {
 
 	print "<tr class='" . ($unhealthy ? 'error' : 'even') . "'>";
 	print '<td><b>' . __('Status', 'audit') . '</b></td>';
-	print '<td>' . html_escape($unhealthy ? __('Unhealthy', 'audit') : __('Healthy', 'audit')) . '</td>';
+	print '<td>' . html_escape(!$enabled ? __('Disabled', 'audit') : ($unhealthy ? __('Unhealthy', 'audit') : __('Healthy', 'audit'))) . '</td>';
 	print '<td><b>' . __('Pending', 'audit') . '</b></td><td>' . (int) $health['pending'] . '</td>';
 	print '<td><b>' . __('Retry', 'audit') . '</b></td><td>' . (int) $health['retry'] . '</td>';
 	print '<td><b>' . __('Dead-letter', 'audit') . '</b></td><td>' . (int) $health['dead_letter'] . '</td>';
@@ -761,7 +758,7 @@ function audit_render_syslog_health(): void {
 	}
 	print '</td></tr>';
 
-	if (!$config['valid']) {
+	if ($enabled && !$config['valid']) {
 		print "<tr class='error'><td colspan='10'><b>" . __esc('Configuration Error:', 'audit') . '</b> ' .
 			html_escape(implode(', ', $config['errors'])) . '</td></tr>';
 	} elseif ($health['last_error'] !== null) {

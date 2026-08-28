@@ -1,9 +1,40 @@
 <?php
 
-$controller = file_get_contents(dirname(__DIR__) . '/audit.php');
-$functions  = file_get_contents(dirname(__DIR__) . '/audit_functions.php');
-$javascript = file_get_contents(dirname(__DIR__) . '/js/functions.js');
-$setup      = file_get_contents(dirname(__DIR__) . '/setup.php');
+$controller = file_get_contents(dirname(__DIR__) . '/audit.php') ?: '';
+$functions  = file_get_contents(dirname(__DIR__) . '/audit_functions.php') ?: '';
+$javascript = file_get_contents(dirname(__DIR__) . '/js/functions.js') ?: '';
+$setup      = file_get_contents(dirname(__DIR__) . '/setup.php') ?: '';
+$info       = parse_ini_file(dirname(__DIR__) . '/INFO', true);
+$changelog  = file_get_contents(dirname(__DIR__) . '/CHANGELOG.md') ?: '';
+
+if (($info['info']['version'] ?? null) !== '1.6' || !str_contains($changelog, '--- 1.6 ---')) {
+	fwrite(STDERR, 'Authentication auditing must ship through the 1.6 upgrade path.' . PHP_EOL);
+	exit(1);
+}
+
+if (preg_match('/function plugin_audit_install\(\): void \{(?<body>.*?)\n\}/s', $setup, $install_match) !== 1 ||
+	str_contains($install_match['body'], 'audit_setup_user_log_indexes()')) {
+	fwrite(STDERR, 'Fresh installation must not index core user_log while authentication auditing is disabled.' . PHP_EOL);
+	exit(1);
+}
+
+if (preg_match('/function audit_check_upgrade\(\): void \{(?<body>.*?)\n\}/s', $setup, $upgrade_match) !== 1) {
+	fwrite(STDERR, 'Unable to inspect the plugin upgrade path.' . PHP_EOL);
+	exit(1);
+}
+
+foreach (['audit_setup_user_log_state_table()', 'audit_persist_auth_defaults()', "'logout_post_session_destroy'", "'custom_denied'"] as $upgrade_requirement) {
+	if (!str_contains($upgrade_match['body'], $upgrade_requirement)) {
+		fwrite(STDERR, 'Missing 1.6 upgrade requirement: ' . $upgrade_requirement . PHP_EOL);
+		exit(1);
+	}
+}
+
+if (preg_match('/function audit_config_settings\(\): void \{(?<body>.*?)\n\}/s', $setup, $settings_match) !== 1 ||
+	strpos($settings_match['body'], "'audit_enabled'") < strpos($settings_match['body'], 'audit_user_is_admin()')) {
+	fwrite(STDERR, 'Master and external audit controls must only be exposed to Audit Log Admin.' . PHP_EOL);
+	exit(1);
+}
 
 $required_controller_guards = [
 	"\$_SERVER['REQUEST_METHOD'] !== 'POST'",
@@ -17,9 +48,9 @@ $required_controller_guards = [
 	"case 'syslog_retry':",
 	'audit_syslog_test_delivery()',
 	'audit_syslog_retry_dead_letters($delivery_ids)',
-	'if (!is_array($data) || $data === [])',
-	"if (!audit_syslog_enabled()) {\n\t\treturn;",
-	"if (audit_syslog_enabled() && db_table_exists('audit_syslog_delivery'))",
+	'if ($data === false || cacti_sizeof($data) === 0)',
+	"if (db_table_exists('audit_syslog_delivery'))",
+	"!\$enabled ? __('Disabled', 'audit')",
 	'cacti_sizeof($syslog) > 0',
 	'$syslog[\'state\'] ?? \'unknown\'',
 	'$syslog[\'attempts\'] ?? 0',
@@ -39,7 +70,7 @@ $required_schema_fragments = [
 	"'audit_manage.php' => __('Audit Log Admin'",
 	'audit_setup_realms(true)',
 	'audit_setup_realms()',
-	'audit_remove_deprecated_realms()',
+	'audit_remove_obsolete_realms()',
 	"auth_augment_roles(__('Audit Plugin', 'audit'), ['audit.php', 'audit_manage.php'])",
 	'api_plugin_register_hook(\'audit\', \'replicate_out\'',
 	'request_status',
@@ -52,17 +83,24 @@ $required_schema_fragments = [
 	'logout_post_session_destroy',
 	'custom_denied',
 	'audit_poll_user_log()',
-	'audit_detect_brute_force()',
+	'audit_detect_failed_login_volume()',
 	'audit_auth_log_enabled',
 	'audit_brute_force_enabled',
 	'audit_user_log_batch_size',
 	'array_merge($temp, $auth_settings, $syslog)',
 	"'audit_user_log_batch_size'        => '1000'",
 	'audit_persist_auth_defaults',
+	'audit_setup_user_log_indexes',
+	'audit_remove_user_log_indexes',
+	"'plugin_audit_time'",
+	"'plugin_audit_result_time'",
 	'CREATE TABLE IF NOT EXISTS `audit_user_log_state`',
+	'KEY `pending_retry` (`audit_id`, `retry_count`, `processed_time`)',
 	'DROP TABLE IF EXISTS audit_user_log_state',
-	"'DELETE FROM settings WHERE LEFT(name, 6) = ?'",
-	"['audit_']",
+	'function audit_owned_setting_names(): array',
+	"'DELETE FROM settings WHERE name IN ('",
+	'audit_owned_setting_names()',
+	"array_diff(\$setting_names, ['audit_user_log_indexes_owned'])",
 	'event_uuid char(36)',
 	'operation_outcome',
 	'external_attempts',
@@ -87,7 +125,7 @@ $required_verifier_fragments = [
 
 $required_auth_fragments = [
 	'function audit_poll_user_log',
-	'function audit_detect_brute_force',
+	'function audit_detect_failed_login_volume',
 	'function audit_custom_denied',
 	'function audit_logout_post_session_destroy',
 	'function audit_user_log_event_descriptor',
@@ -97,16 +135,28 @@ $required_auth_fragments = [
 	"'cacti.auth.password.changed'",
 	"'cacti.auth.password_change_or_2fa_failed'",
 	"'cacti.auth.login.unknown'",
-	"'cacti.auth.brute_force_suspected'",
+	"'cacti.auth.failed_login_volume_anomaly'",
+	"'authentication_environment'",
+	"'distinct_usernames'",
+	"'distinct_ips'",
 	"'cacti.auth.authorization.denied'",
 	"'authentication.logout.completed'",
 	"'audit.configuration.denied'",
-	"'START TRANSACTION'",
-	"'ROLLBACK'",
-	"'COMMIT'",
+	'UNIX_TIMESTAMP(ul.time) AS source_epoch',
+	'source_username, source_user_id, source_epoch',
+	'INNER JOIN user_log AS ul',
+	'audit_auth_log_last_state',
+	'retry_count = retry_count + ?',
+	'VALUES (?, ?, ?, UTC_TIMESTAMP(), 0, 0, UTC_TIMESTAMP(6))',
+	"LIMIT ' .",
+	'UPDATE audit_user_log_state',
+	'audit_user_log_watermark_epoch',
+	'function audit_user_log_event_uuid',
+	'SELECT id FROM audit_log WHERE event_uuid = ?',
+	'AND auls.retry_count < ?',
 	"'defer_delivery'",
-	'FROM audit_user_log_state AS auls',
-	'INSERT IGNORE INTO settings (name, value)'
+	'LEFT JOIN audit_user_log_state AS auls',
+	'ON DUPLICATE KEY UPDATE value = GREATEST'
 ];
 
 foreach ($required_auth_fragments as $fragment) {

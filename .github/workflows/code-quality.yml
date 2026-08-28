@@ -97,5 +97,8 @@ jobs:
           php tests/controller_security_test.php
           php tests/syslog_queue_test.php
           php tests/auth_audit_test.php
+          phpdbg -qrr tests/auth_audit_coverage_test.php
+          php tests/setup_defaults_test.php
+          php tests/setup_index_test.php
           timeout 60 php tests/syslog_functions_test.php
         working-directory: cacti/plugins/audit

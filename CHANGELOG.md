@@ -12,7 +12,6 @@
 * security: Record user_log result=1 as credentials_accepted with unknown outcome, not a confirmed login success
 * security: Record ambiguous user_log result=3/user_id=0 and unsupported result codes as unknown rather than misclassifying them
 * security: Restrict authentication auditing and brute-force detection settings to Audit Log Admin users and enforce authorization on save
-* security: Gate the original logout event behind the authentication auditing master switch
 * security: Make authentication auditing opt-in, seed upgrades at the current epoch, and preserve existing administrator choices
 * security: Bound failed-row retries, reserve ingestion capacity for new rows, and recover interrupted finalization through deterministic event UUIDs
 * security: Make marker cleanup replay-safe and rate-proportional, with terminal-loss evidence retained in the Cacti log when audit table writes fail

@@ -952,7 +952,8 @@ audit_test_assert_same(0, count($audit_auth_recorded_events), 'audit_custom_deni
 $audit_auth_config['audit_auth_log_enabled'] = 'on';
 
 // ---------------------------------------------------------------------------
-// 10. Logout: master switch gates pre-destroy; post-destroy uses stash
+// 10. Logout: pre-destroy records regardless of the master switch so upgrades
+//     keep the existing event; post-destroy uses the stash
 // ---------------------------------------------------------------------------
 
 $_SESSION['sess_user_id'] = 5;
